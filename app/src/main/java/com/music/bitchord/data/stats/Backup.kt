@@ -1,5 +1,6 @@
 package com.music.bitchord.data.stats
 
+import com.music.bitchord.R
 import android.content.Context
 import android.net.Uri
 import com.music.bitchord.BuildConfig
@@ -91,12 +92,12 @@ object Backup {
         runCatching {
             val text = context.contentResolver.openInputStream(source)
                 ?.use { it.readBytes().decodeToString() }
-                ?: error("Couldn't open that file")
+                ?: error(context.getString(R.string.backup_err_open))
             val file = runCatching { json.decodeFromString(BackupFile.serializer(), text) }
-                .getOrElse { error("That doesn't look like a BitChord backup") }
-            require(file.app == APP_TAG) { "That backup is from another app" }
+                .getOrElse { error(context.getString(R.string.backup_err_not_backup)) }
+            require(file.app == APP_TAG) { context.getString(R.string.backup_err_other_app) }
             require(file.version <= SCHEMA_VERSION) {
-                "That backup was written by a newer version of BitChord"
+                context.getString(R.string.backup_err_newer_version)
             }
 
             ListeningStats.importAll(file.listening)

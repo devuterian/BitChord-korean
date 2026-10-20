@@ -1,5 +1,7 @@
 package com.music.bitchord.data.sources.addon
 
+import com.music.bitchord.R
+import com.music.bitchord.data.sources.SourceText
 import com.music.bitchord.data.Http
 import com.music.bitchord.data.TrackLog
 import com.music.bitchord.data.settings.AppSettings
@@ -85,17 +87,23 @@ class AddonClient(rawBaseUrl: String) {
     ) {
         fetch<AddonManifest>(manifestUrl(baseUrl)).mapCatching { manifest ->
             if (manifest.id.isBlank()) {
-                throw AddonException("That URL answered, but not with an addon manifest")
+                throw AddonException(
+                    "That URL answered, but not with an addon manifest",
+                    SourceText(R.string.addon_err_not_manifest),
+                )
             }
             if (!manifest.isPlayable) {
                 val declared = manifest.resources.joinToString(", ")
-                throw AddonException("This addon declares $declared — BitChord needs search")
+                throw AddonException(
+                    "This addon declares $declared — BitChord needs search",
+                    SourceText(R.string.addon_err_needs_search, declared),
+                )
             }
             manifest
         }.recoverCatching { failure ->
             // A manifest 404 is not "no such track", it is "no addon here" —
             // the one place the miss/fault distinction below has to be undone.
-            if (failure is AddonNotFound) throw AddonException("No manifest at that URL")
+            if (failure is AddonNotFound) throw AddonException("No manifest at that URL", SourceText(R.string.addon_err_no_manifest))
             throw failure
         }
     }
@@ -296,7 +304,7 @@ class AddonClient(rawBaseUrl: String) {
     /** `{base}/{segments…}?{params}`, with every part properly encoded. */
     private fun endpoint(segments: List<String>, params: Map<String, String>): String {
         val base = baseUrl.toHttpUrlOrNull()
-            ?: throw AddonException("That is not a usable address")
+            ?: throw AddonException("That is not a usable address", SourceText(R.string.addon_err_bad_address))
         val builder = base.newBuilder()
         segments.forEach(builder::addPathSegment)
         params.forEach { (key, value) -> builder.addQueryParameter(key, value) }
@@ -343,7 +351,7 @@ class AddonClient(rawBaseUrl: String) {
                 when {
                     response.isSuccessful ->
                         return@withContext response.body?.string()?.takeIf { it.isNotBlank() }
-                            ?: throw AddonException("Empty response")
+                            ?: throw AddonException("Empty response", SourceText(R.string.addon_err_empty))
                     response.code == 404 -> throw AddonNotFound()
                     // A 5xx is a server having a bad minute and will be tried
                     // again on the next track; a 4xx is this app asking for
@@ -354,7 +362,10 @@ class AddonClient(rawBaseUrl: String) {
                     // sends people to re-paste a URL that was always correct.
                     response.code >= 500 -> throw AddonUnavailable("HTTP ${response.code}")
                     response.code != 429 -> throw AddonException("HTTP ${response.code}")
-                    attempt >= MAX_RETRIES -> throw AddonUnavailable("This addon is rate limiting BitChord")
+                    attempt >= MAX_RETRIES -> throw AddonUnavailable(
+                        "This addon is rate limiting BitChord",
+                        SourceText(R.string.addon_err_rate_limited),
+                    )
                     else -> retryAfterMs(response.header("Retry-After"), attempt)
                 }
             }
@@ -532,7 +543,7 @@ class AddonClient(rawBaseUrl: String) {
  * [SourceHealth.Rejected][com.music.bitchord.data.sources.SourceHealth.Rejected],
  * with a line fit to show a user.
  */
-class AddonException(message: String) : Exception(message)
+class AddonException(message: String, val text: SourceText? = null) : Exception(message)
 
 /**
  * The addon is momentarily not answering — down, overloaded, rate limiting.
@@ -540,7 +551,10 @@ class AddonException(message: String) : Exception(message)
  * the whole distinction
  * [SourceHealth][com.music.bitchord.data.sources.SourceHealth] draws.
  */
-class AddonUnavailable(message: String) : Exception(message)
+class AddonUnavailable(message: String, val text: SourceText? = null) : Exception(message)
+
+/** The localised form of this failure's message, when it carries one. */
+fun Throwable.addonText(): SourceText? = (this as? AddonException)?.text ?: (this as? AddonUnavailable)?.text
 
 /** The addon answered, and does not have what was asked for. A miss, not a fault. */
 class AddonNotFound : Exception("Not held by this addon")

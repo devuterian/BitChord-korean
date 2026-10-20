@@ -1,6 +1,7 @@
 package com.music.bitchord.data.listentogether
 
 import android.content.Context
+import com.music.bitchord.R
 import android.os.SystemClock
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
@@ -814,8 +815,8 @@ object ListenTogether {
     }
 
     private suspend fun doCreateOnServer(serverBase: String, nickname: String, maxMembers: Int): String {
-        val who = identity(nickname) ?: throw PartyException("not_signed_in", "Sign in to listen together.")
-        if (serverBase.isBlank()) throw PartyException("no_server", "Set the party server address first.")
+        val who = identity(nickname) ?: throw PartyException("not_signed_in", MSG_SIGN_IN)
+        if (serverBase.isBlank()) throw PartyException("no_server", MSG_NO_SERVER)
         val membership = post(
             "$serverBase/api/parties",
             JoinRequest(
@@ -869,11 +870,11 @@ object ListenTogether {
     }
 
     private suspend fun doJoinOnServer(serverBase: String, code: String, nickname: String): String {
-        val who = identity(nickname) ?: throw PartyException("not_signed_in", "Sign in to listen together.")
-        if (serverBase.isBlank()) throw PartyException("no_server", "Set the party server address first.")
+        val who = identity(nickname) ?: throw PartyException("not_signed_in", MSG_SIGN_IN)
+        if (serverBase.isBlank()) throw PartyException("no_server", MSG_NO_SERVER)
         val cleaned = code.filter { it.isLetterOrDigit() }.uppercase()
         if (cleaned.length != CODE_LENGTH) {
-            throw PartyException("bad_code", "A party code is six letters or digits.")
+            throw PartyException("bad_code", MSG_BAD_CODE)
         }
         refuseIfRecentlyKicked(cleaned)
         val membership = post(
@@ -935,40 +936,40 @@ object ListenTogether {
         withContext(Dispatchers.IO) {
             val who = identity(nickname)
                 ?: return@withContext if (_state.value.inParty) {
-                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), "Sign in to listen together.")
+                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), MSG_SIGN_IN)
                 } else {
-                    SwitchPartyResult.TargetFailedNoParty("Sign in to listen together.")
+                    SwitchPartyResult.TargetFailedNoParty(MSG_SIGN_IN)
                 }
 
             val normTarget = when (val res = parseAndNormalizeServerUrl(targetCustomServer)) {
                 is ServerUrlValidationResult.Valid -> res.normalizedUrl
                 is ServerUrlValidationResult.Invalid -> return@withContext if (_state.value.inParty) {
-                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), "Target server address is invalid.")
+                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), MSG_TARGET_INVALID)
                 } else {
-                    SwitchPartyResult.TargetFailedNoParty("Target server address is invalid.")
+                    SwitchPartyResult.TargetFailedNoParty(MSG_TARGET_INVALID)
                 }
             }
 
             val targetBase = resolveHttpBase(normTarget)
             if (targetBase.isBlank()) {
                 return@withContext if (_state.value.inParty) {
-                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), "Target server address is invalid or missing.")
+                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), MSG_TARGET_MISSING)
                 } else {
-                    SwitchPartyResult.TargetFailedNoParty("Target server address is invalid or missing.")
+                    SwitchPartyResult.TargetFailedNoParty(MSG_TARGET_MISSING)
                 }
             }
 
             val cleanedTargetCode = targetCode.filter { it.isLetterOrDigit() }.uppercase()
             if (cleanedTargetCode.length != CODE_LENGTH) {
                 return@withContext if (_state.value.inParty) {
-                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), "A party code is six letters or digits.")
+                    SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), MSG_BAD_CODE)
                 } else {
-                    SwitchPartyResult.TargetFailedNoParty("A party code is six letters or digits.")
+                    SwitchPartyResult.TargetFailedNoParty(MSG_BAD_CODE)
                 }
             }
 
             if (recentKicks().containsKey(cleanedTargetCode)) {
-                val refusal = "Couldn’t let you in — you’ve recently been kicked out of this party."
+                val refusal = MSG_RECENTLY_KICKED
                 return@withContext if (_state.value.inParty) {
                     SwitchPartyResult.TargetFailedRecovered(_state.value.code.orEmpty(), refusal)
                 } else {
@@ -1539,7 +1540,7 @@ object ListenTogether {
         if (recentKicks().containsKey(code)) {
             throw PartyException(
                 "recently_kicked",
-                "Couldn’t let you in — you’ve recently been kicked out of this party.",
+                MSG_RECENTLY_KICKED,
             )
         }
     }
@@ -1584,12 +1585,12 @@ object ListenTogether {
     suspend fun previewParty(code: String, server: String? = null): Result<PartyPreview> {
         val cleaned = code.filter { it.isLetterOrDigit() }.uppercase()
         if (cleaned.length != CODE_LENGTH) {
-            return Result.failure(PartyException("bad_code", "A party code is six letters or digits."))
+            return Result.failure(PartyException("bad_code", MSG_BAD_CODE))
         }
         return runCatching {
             refuseIfRecentlyKicked(cleaned)
             val base = resolveHttpBase(server ?: effectiveIdleServerBase())
-            if (base.isBlank()) throw PartyException("no_server", "Set the party server address first.")
+            if (base.isBlank()) throw PartyException("no_server", MSG_NO_SERVER)
             val response = http.get("$base/api/parties/$cleaned/preview")
             if (!response.status.isSuccess()) {
                 val problem = response.toPartyException()
@@ -1633,7 +1634,7 @@ object ListenTogether {
             message = parsed?.message?.takeIf { it.isNotBlank() }
                 // 422 is the server rejecting an identity, which here can only
                 // mean the account layer handed over something blank.
-                ?: if (status.value == 422) "This account can't be used to jam."
+                ?: if (status.value == 422) MSG_ACCOUNT_REJECTED
                 else "The party server said ${status.value}.",
             statusCode = status.value,
         )
@@ -1699,7 +1700,42 @@ object ListenTogether {
     /** What a redacted address reads as. Not a hostname, so it cannot be resolved back. */
     private const val SERVER_PLACEHOLDER = "<party server>"
 
+    private const val MSG_SIGN_IN = "Sign in to listen together."
+    private const val MSG_NO_SERVER = "Set the party server address first."
+    private const val MSG_BAD_CODE = "A party code is six letters or digits."
+    private const val MSG_TARGET_INVALID = "Target server address is invalid."
+    private const val MSG_TARGET_MISSING = "Target server address is invalid or missing."
+    private const val MSG_RECENTLY_KICKED = "Couldn’t let you in — you’ve recently been kicked out of this party."
+    private const val MSG_ACCOUNT_REJECTED = "This account can't be used to jam."
     private const val UNREACHABLE = "Couldn’t reach the party server."
+
+    /**
+     * [message] as the listener should read it: the fixed messages this class
+     * produces in their string resources, anything else (a server's own words)
+     * unchanged. Apply where an error is shown, never where it is compared.
+     */
+    fun localizedMessage(context: Context, message: String?): String? {
+        if (message == null) return null
+        val res = when (message) {
+            MSG_SIGN_IN -> R.string.party_err_sign_in
+            MSG_NO_SERVER -> R.string.party_err_no_server
+            MSG_BAD_CODE -> R.string.party_err_bad_code
+            MSG_TARGET_INVALID -> R.string.party_err_target_invalid
+            MSG_TARGET_MISSING -> R.string.party_err_target_missing
+            MSG_RECENTLY_KICKED -> R.string.party_err_recently_kicked
+            MSG_ACCOUNT_REJECTED -> R.string.party_err_account_rejected
+            UNREACHABLE -> R.string.party_err_unreachable
+            else -> null
+        }
+        if (res != null) return context.getString(res)
+        SERVER_SAID.matchEntire(message)?.let {
+            return context.getString(R.string.party_err_server_status, it.groupValues[1].toInt())
+        }
+        return message
+    }
+
+    private val SERVER_SAID = Regex("""The party server said (\d+)\.""")
+
 
     private val ABSOLUTE_URL = Regex("""(?:https?|wss?)://[^\s,;)\]}'\"]+""", RegexOption.IGNORE_CASE)
     private const val KEY_CODE = "party_code"

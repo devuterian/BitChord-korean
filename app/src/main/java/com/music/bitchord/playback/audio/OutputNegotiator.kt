@@ -11,6 +11,8 @@
 package com.music.bitchord.playback.audio
 
 import android.media.AudioFormat
+import androidx.annotation.StringRes
+import com.music.bitchord.R
 import com.music.bitchord.data.settings.OutputPcmMode
 import com.music.bitchord.playback.AudioOutputPolicy
 import com.music.bitchord.playback.AudioRouting
@@ -30,13 +32,13 @@ enum class TransportType(val label: String) {
  * Authoritative rationale when the audio pipeline falls back from the listener's requested
  * format or transport to a lower-precision or system-mixed path.
  */
-enum class FallbackReason(val label: String) {
-    NONE("None"),
-    UNSUPPORTED_FORMAT("Unsupported source format"),
-    ROUTE_LIMITATION("Route limitation (device profile)"),
-    OS_LIMITATION("OS limitation (system audio policy)"),
-    DIRECT_USB_UNAVAILABLE("Direct USB unavailable"),
-    DECODER_LIMITATION("Decoder limitation"),
+enum class FallbackReason(val label: String, @StringRes val labelRes: Int) {
+    NONE("None", R.string.pipeline_none),
+    UNSUPPORTED_FORMAT("Unsupported source format", R.string.fallback_reason_unsupported_format),
+    ROUTE_LIMITATION("Route limitation (device profile)", R.string.fallback_reason_route_limitation),
+    OS_LIMITATION("OS limitation (system audio policy)", R.string.fallback_reason_os_limitation),
+    DIRECT_USB_UNAVAILABLE("Direct USB unavailable", R.string.fallback_reason_direct_usb_unavailable),
+    DECODER_LIMITATION("Decoder limitation", R.string.fallback_reason_decoder_limitation),
 }
 
 data class SourceDescriptor(

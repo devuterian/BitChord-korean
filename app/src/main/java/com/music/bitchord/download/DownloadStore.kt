@@ -1,5 +1,6 @@
 package com.music.bitchord.download
 
+import com.music.bitchord.R
 import android.content.ContentValues
 import android.content.Context
 import android.media.MediaScannerConnection
@@ -225,12 +226,12 @@ object DownloadStore {
         fun openStream(): OutputStream =
             part?.outputStream()
                 ?: context.contentResolver.openOutputStream(uri)
-                ?: error("Could not open $name for writing")
+                ?: downloadError(R.string.download_err_open_write, name)
 
         /** @return the uri the finished file can be reached at. */
         fun commit(): Uri {
             if (part != null && target != null) {
-                if (!part.renameTo(target)) error("Could not finish writing $name")
+                if (!part.renameTo(target)) downloadError(R.string.download_err_finish_write, name)
                 // Nothing indexes a file that simply appeared; without this it
                 // is on disk and invisible to every app that lists media.
                 MediaScannerConnection.scanFile(
@@ -266,8 +267,8 @@ object DownloadStore {
     fun begin(context: Context, name: String, mimeType: String): Pending {
         if (!AppSettings.exportDownloads.value) {
             val target = privateFile(context, name)
-            val folder = target.parentFile ?: error("No download folder")
-            if (!folder.exists() && !folder.mkdirs()) error("Could not create ${folder.path}")
+            val folder = target.parentFile ?: downloadError(R.string.download_err_no_folder)
+            if (!folder.exists() && !folder.mkdirs()) downloadError(R.string.download_err_create_folder, folder.path)
             val part = File(folder, ".$name.part")
             part.delete()
             return Pending(context, Uri.fromFile(target), name, part = part, target = target)
@@ -290,14 +291,14 @@ object DownloadStore {
                 context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
             }.getOrElse { cause ->
                 Log.w(TAG, "the media store refused $mimeType for $name: ${cause.message}")
-                error("Android won't store ${name.substringAfterLast('.', mimeType)} files in Music")
-            } ?: error("Could not create $name in Music")
+                downloadError(R.string.download_err_mime, name.substringAfterLast('.', mimeType))
+            } ?: downloadError(R.string.download_err_create_in_music, name)
             return Pending(context, uri, name, part = null, target = null)
         }
 
         val target = legacyFile(name)
-        val folder = target.parentFile ?: error("No Music folder on this device")
-        if (!folder.exists() && !folder.mkdirs()) error("Could not create ${folder.path}")
+        val folder = target.parentFile ?: downloadError(R.string.download_err_no_music_folder)
+        if (!folder.exists() && !folder.mkdirs()) downloadError(R.string.download_err_create_folder, folder.path)
         val part = File(folder, "$name.part")
         part.delete()
         return Pending(context, Uri.fromFile(target), name, part = part, target = target)

@@ -3050,7 +3050,7 @@ private fun BitChordApp(
                             searching = detailSearching && page.browseId == detail?.browseId,
                             onSearchingChange = { detailSearching = it },
                             onArtistClick = { id, name ->
-                                viewModel.openDetail(id, name, "Artist", null, BrowseType.ARTIST)
+                                viewModel.openDetail(id, name, context.getString(R.string.detail_subtitle_artist), null, BrowseType.ARTIST)
                             },
                             onAddSuggested = { song -> viewModel.addSuggestedSong(page.browseId, song) },
                             // Saving is an account action, so it isn't offered to a
@@ -3549,7 +3549,7 @@ private fun BitChordApp(
                 FrostedTopBar(
                     title = when {
                         showSpotify && detail == null -> stringResource(R.string.spotify)
-                        showDiscord -> "Discord"
+                        showDiscord -> stringResource(R.string.discord)
                         showHistory -> stringResource(R.string.history)
                         libraryShowAll != null && detail == null -> libraryShowAll?.title.orEmpty()
                         showAccountScrobbling -> stringResource(R.string.account_scrobbling)
@@ -4632,7 +4632,7 @@ private fun BitChordApp(
                             ),
                         )
                         browseId?.let { id ->
-                            viewModel.openDetail(id, pTitle, "${songs.size} songs", songs.firstOrNull()?.thumbnailUrl)
+                            viewModel.openDetail(id, pTitle, context.resources.getQuantityString(R.plurals.song_count_plural, songs.size, songs.size), songs.firstOrNull()?.thumbnailUrl)
                         }
                     }
                 },
@@ -5331,7 +5331,7 @@ private fun BitChordApp(
                             )
                         }
                         Text(
-                            "Sign in to Discord",
+                            stringResource(R.string.discord_sign_in_title),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onBackground,
                         )

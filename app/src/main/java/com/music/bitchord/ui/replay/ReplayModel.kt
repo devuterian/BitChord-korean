@@ -121,7 +121,7 @@ fun ReplaySummary.storyHeadline(context: Context, page: ReplayStoryPage): List<H
     ReplayStoryPage.INTRO -> runs(
         context.getString(R.string.replay_intro_start) to false,
         " " to false,
-        "Replay" to true,
+        context.getString(R.string.replay) to true,
         " " to false,
         context.getString(R.string.replay_intro_end) to false,
     )
@@ -178,7 +178,7 @@ fun ReplaySummary.storyHeadline(context: Context, page: ReplayStoryPage): List<H
         context.getString(R.string.replay_summary_start) to false,
         " " to false,
         if (period == ReplayPeriod.THIS_WEEK) context.getString(R.string.replay_summary_end_week) to true else label to true,
-        if (period == ReplayPeriod.THIS_WEEK) " in music." to false else " in music." to false,
+        context.getString(R.string.replay_summary_in_music) to false,
     )
 }
 
@@ -190,7 +190,7 @@ fun ReplayPeriod.localizedChip(context: Context): String = when (this) {
 }
 
 fun ReplaySummary.localizedLabel(context: Context): String = when (period) {
-    ReplayPeriod.THIS_WEEK -> "This week"
+    ReplayPeriod.THIS_WEEK -> context.getString(R.string.replay_this_week)
     ReplayPeriod.THIS_MONTH -> DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
         .format(LocalDate.now())
         .replaceFirstChar { it.titlecase(Locale.getDefault()) }

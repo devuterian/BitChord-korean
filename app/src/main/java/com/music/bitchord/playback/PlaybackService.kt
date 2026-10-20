@@ -4150,7 +4150,7 @@ class PlaybackService : MediaLibraryService() {
         var depth = 0
         while (cause != null && depth++ < PERMANENT_CAUSE_DEPTH) {
             if (cause is StreamResolver.PermanentlyUnplayableException) {
-                return cause.message ?: "This track cannot be played"
+                return cause.message ?: getString(R.string.track_unplayable)
             }
             cause = cause.cause?.takeIf { it !== cause }
         }
@@ -8389,7 +8389,7 @@ class PlaybackService : MediaLibraryService() {
                             if (cached != null) {
                                 resolved.add(cached.toMediaItem())
                             } else {
-                                resolved.add(Song(videoId = videoId, title = item.mediaMetadata.title?.toString() ?: "Track", artist = item.mediaMetadata.artist?.toString() ?: "Artist", thumbnailUrl = null).toMediaItem())
+                                resolved.add(Song(videoId = videoId, title = item.mediaMetadata.title?.toString() ?: getString(R.string.fallback_track_title), artist = item.mediaMetadata.artist?.toString() ?: getString(R.string.fallback_artist_name), thumbnailUrl = null).toMediaItem())
                             }
                         } else {
                             resolved.add(item.buildUpon().setUri(uri).build())

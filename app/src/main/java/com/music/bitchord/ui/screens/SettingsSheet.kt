@@ -146,6 +146,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import com.music.bitchord.ui.components.localizePipelineText
 import com.music.bitchord.ui.components.isGlassSupported
 import com.music.bitchord.ui.components.languageDisplayNameRes
 import com.music.bitchord.ui.components.MessageState
@@ -596,6 +597,7 @@ fun SettingsScreen(
                 )
             }
             val outputPrecisionTitle = stringResource(R.string.output_precision)
+            val pipelineContext = LocalContext.current
             row(outputPrecisionTitle, "pcm", "bit depth", "sample rate", "dac") {
                 SettingsRow(
                     icon = Icons.Rounded.GraphicEq,
@@ -603,15 +605,15 @@ fun SettingsScreen(
                     subtitle = buildString {
                         append(outputStatus.sink)
                         append(" · ")
-                        append(outputStatus.deviceName)
+                        append(pipelineContext.localizePipelineText(outputStatus.deviceName))
                         (outputStatus.actualSampleRateHz ?: outputStatus.sampleRatesHz.firstOrNull())
                             ?.let { append(" · ${it / 1000.0} kHz") }
                         append(" · ")
-                        append(AudioOutputStatus.encodingLabel(outputStatus))
+                        append(pipelineContext.localizePipelineText(AudioOutputStatus.encodingLabel(outputStatus)))
                     },
                 )
                 SegmentedControl(
-                    options = OutputPcmMode.entries.map(OutputPcmMode::label),
+                    options = OutputPcmMode.entries.map { stringResource(it.labelRes()) },
                     selectedIndex = OutputPcmMode.entries.indexOf(outputPcmMode),
                     onSelect = { AppSettings.setOutputPcmMode(OutputPcmMode.entries[it]) },
                     modifier = Modifier.padding(start = TEXT_INSET, end = ROW_INSET, bottom = 14.dp),
@@ -1633,6 +1635,8 @@ fun SettingsScreen(
         // The version line is the page's colophon, not a setting: it belongs to
         // the whole list, so it goes when the list is narrowed to a few rows.
         if (searchQuery.isBlank()) {
+        val developerLabel = stringResource(R.string.settings_link_developer)
+        val websiteLabel = stringResource(R.string.settings_link_website)
         Text(
             text = buildAnnotatedString {
                 append("bitchord $version  ")
@@ -1647,7 +1651,7 @@ fun SettingsScreen(
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://github.com/kushagrasinghx", linkStyles)) {
-                    append("Developer")
+                    append(developerLabel)
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://discord.gg/pDdKfrdHY6", linkStyles)) {
@@ -1655,7 +1659,7 @@ fun SettingsScreen(
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://bitchord.kushagrasingh.in/", linkStyles)) {
-                    append("Website")
+                    append(websiteLabel)
                 }
                 append("\n~YouTube Music & Listen Together Backend")
             },
@@ -1968,6 +1972,24 @@ private fun AudioQuality.localizedLabel(): String = stringResource(
     },
 )
 
+private fun AudioQuality.detailRes(): Int = when (this) {
+    AudioQuality.LOW -> R.string.audio_quality_low_detail
+    AudioQuality.MEDIUM -> R.string.audio_quality_medium_detail
+    AudioQuality.HIGH -> R.string.audio_quality_high_detail
+    AudioQuality.LOSSLESS -> R.string.audio_quality_lossless_detail
+}
+
+private fun DownloadQuality.detailRes(): Int = when (this) {
+    DownloadQuality.STANDARD -> R.string.download_quality_standard_detail
+    DownloadQuality.HIGH -> R.string.download_quality_high_detail
+    DownloadQuality.LOSSLESS -> R.string.download_quality_lossless_detail
+}
+
+private fun OutputPcmMode.labelRes(): Int = when (this) {
+    OutputPcmMode.PCM_16 -> R.string.output_pcm_16
+    OutputPcmMode.FLOAT_32 -> R.string.output_pcm_32_float
+}
+
 @Composable
 private fun DownloadQuality.localizedLabel(): String = stringResource(
     when (this) {
@@ -2170,7 +2192,7 @@ private fun QualitySheet(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = stringResource(R.string.quality_hourly, quality.detail, quality.hourly),
+                        text = stringResource(R.string.quality_hourly, stringResource(quality.detailRes()), quality.hourly),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -2329,7 +2351,7 @@ private fun DownloadQualitySheet(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = stringResource(R.string.quality_per_track, quality.detail, quality.perTrack),
+                        text = stringResource(R.string.quality_per_track, stringResource(quality.detailRes()), quality.perTrack),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

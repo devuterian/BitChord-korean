@@ -1,5 +1,8 @@
 package com.music.bitchord.data.sources
 
+import androidx.annotation.StringRes
+import com.music.bitchord.R
+
 /**
  * The kinds of source this build knows how to talk to.
  *
@@ -15,9 +18,11 @@ package com.music.bitchord.data.sources
  */
 enum class SourceKind(
     val label: String,
+    /** [label] for display, resolved by the UI; [label] stays as the English fallback for logs and default names. */
+    @StringRes val labelRes: Int,
     val detail: String,
-    /** The chips under the name on the sources screen. */
-    val labels: List<String>,
+    /** The chips under the name on the sources screen, as string resources. */
+    @StringRes val labels: List<Int>,
     /** Whether an instance needs a URL before it can do anything — and so needs an editor. */
     val needsServer: Boolean,
     /** Whether this kind can serve bit-exact audio when asked. */
@@ -71,9 +76,10 @@ enum class SourceKind(
      */
     ADDON(
         label = "Addon",
+        labelRes = R.string.source_kind_addon,
         detail = "An addon server you host or were given a link to. Searched and streamed over " +
             "plain HTTP — no code is downloaded or run.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res"),
+        labels = listOf(R.string.source_label_flac, R.string.lossless, R.string.source_label_hires),
         needsServer = true,
         canServeLossless = true,
         // Literal, not [USER_ADDED]: an enum entry is constructed before
@@ -91,8 +97,12 @@ enum class SourceKind(
      */
     CUSTOM_MODULE(
         label = "Custom module",
+        labelRes = R.string.source_kind_custom_module,
         detail = "Your own compatible module index. Tried before the built-in one.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
+        labels = listOf(
+            R.string.source_label_flac, R.string.lossless, R.string.source_label_hires,
+            R.string.source_label_plugins,
+        ),
         needsServer = true,
         canServeLossless = true,
         // Literal, not [USER_ADDED]: an enum entry is constructed before
@@ -119,9 +129,13 @@ enum class SourceKind(
      */
     MODULE(
         label = "Module source",
+        labelRes = R.string.source_kind_module,
         detail = "A URL to a compatible module index. Modules are JS plugins that " +
             "can search and stream from services like Tidal, Qobuz, Apple Music and more.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
+        labels = listOf(
+            R.string.source_label_flac, R.string.lossless, R.string.source_label_hires,
+            R.string.source_label_plugins,
+        ),
         needsServer = true,
         canServeLossless = true,
         rank = 1,
@@ -129,8 +143,9 @@ enum class SourceKind(
 
     JIOSAAVN(
         label = "JioSaavn",
+        labelRes = R.string.source_kind_jiosaavn,
         detail = "Optional JioSaavn streams up to 320kbps AAC/MP4. Catalogue matching can select the wrong song.",
-        labels = listOf("High Quality", "320kbps"),
+        labels = listOf(R.string.source_label_high_quality, R.string.source_label_320kbps),
         needsServer = false,
         canServeLossless = false,
         worthPrefetching = true,
@@ -145,9 +160,13 @@ enum class SourceKind(
      */
     YOUTUBE(
         label = "YouTube Music",
+        labelRes = R.string.source_kind_youtube,
         detail = "The full catalogue, at Opus up to about 171 kbps. Lossy — there is no " +
             "lossless rendition to ask for.",
-        labels = listOf("Lossy", "Full catalogue", "Radio"),
+        labels = listOf(
+            R.string.source_label_lossy, R.string.source_label_full_catalogue,
+            R.string.source_label_radio,
+        ),
         needsServer = false,
         canServeLossless = false,
         rank = 3,

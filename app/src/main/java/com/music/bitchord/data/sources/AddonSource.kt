@@ -1,5 +1,7 @@
 package com.music.bitchord.data.sources
 
+import com.music.bitchord.R
+import com.music.bitchord.data.sources.addon.addonText
 import com.music.bitchord.data.TrackLog
 import com.music.bitchord.data.model.Song
 import com.music.bitchord.data.settings.AppSettings
@@ -107,10 +109,10 @@ class AddonSource(
      */
     override suspend fun health(): SourceHealth = withContext(Dispatchers.IO) {
         if (config.baseUrl.isBlank()) {
-            return@withContext SourceHealth.Rejected("An addon URL is required")
+            return@withContext SourceHealth.Rejected("An addon URL is required", SourceText(R.string.addon_url_required))
         }
         if (shutOut("a health check")) {
-            return@withContext SourceHealth.Rejected(NEEDS_LOSSLESS_OUTPUT)
+            return@withContext SourceHealth.Rejected(NEEDS_LOSSLESS_OUTPUT, SourceText(R.string.addon_needs_lossless_output))
         }
         client.manifest().fold(
             onSuccess = { manifest ->
@@ -131,14 +133,16 @@ class AddonSource(
                 // kinds of working this is.
                 if (client.probeSearch().isSuccess) {
                     TrackLog.d(TAG, "${config.displayName}: no manifest, but search answers")
-                    return@fold SourceHealth.Ok("No manifest · search works")
+                    return@fold SourceHealth.Ok("No manifest · search works", SourceText(R.string.addon_no_manifest_ok))
                 }
                 val reason = failure.message ?: "Could not reach the addon"
+                val reasonText = failure.addonText()
+                    ?: if (failure.message == null) SourceText(R.string.addon_unreachable) else null
                 if (failure is AddonException) {
-                    SourceHealth.Rejected(reason)
+                    SourceHealth.Rejected(reason, reasonText)
                 } else {
                     TrackLog.w(TAG, "addon unreachable for ${config.displayName}: $reason")
-                    SourceHealth.Unreachable(reason)
+                    SourceHealth.Unreachable(reason, reasonText)
                 }
             },
         )

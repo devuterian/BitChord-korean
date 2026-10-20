@@ -1031,7 +1031,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         // surfaces that draw it leave a blank one out, so an
                         // unseeded playlist gets a card of just its name rather
                         // than a guess at what the feed will call it.
-                        subtitle = if (song != null) "1 song" else "",
+                        subtitle = if (song != null) getApplication<Application>().resources.getQuantityString(R.plurals.song_count_plural, 1, 1) else "",
                         thumbnailUrl = song?.thumbnailUrl,
                     )
                     // Drawn from what was just sent rather than waited for: the
@@ -1086,7 +1086,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         val created = UserPlaylist(
                             playlistId = playlistId,
                             title = name,
-                            subtitle = "${videoIds.size} songs",
+                            subtitle = getApplication<Application>().resources.getQuantityString(R.plurals.song_count_plural, videoIds.size, videoIds.size),
                             thumbnailUrl = null,
                         )
                         _playlists.value = listOf(created) +
@@ -2817,7 +2817,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             Downloads.recordIdOf(browseId) != null ->
                 nonEmpty(downloadedPlaylist(browseId)) { text(R.string.downloaded_playlist_empty) }
             browseId == "local:downloads" ->
-                nonEmpty(Downloads.getDownloadedSongs(context)) { "No downloaded tracks" }
+                nonEmpty(Downloads.getDownloadedSongs(context)) { context.getString(R.string.no_downloaded_songs) }
             browseId == CACHE_FOLDER_BROWSE_ID -> cachedSongsState()
             browseId == "local:all" -> if (!LocalMediaRepository.hasStoragePermission(context)) {
                 UiState.Error(text(R.string.storage_required_read))

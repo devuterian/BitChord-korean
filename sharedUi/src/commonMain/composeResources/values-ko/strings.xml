@@ -207,4 +207,6 @@
     <string name="import_spotify">Spotify 가져오기</string>
     <string name="import_spotify_subtitle">재생목록 링크로 가져오기</string>
     <string name="sign_in_with_google">Google로 로그인</string>
+    <string name="songs">곡</string>
+    <string name="top_result">상위 검색결과</string>
 </resources>

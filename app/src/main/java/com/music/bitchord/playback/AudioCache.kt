@@ -1,5 +1,6 @@
 package com.music.bitchord.playback
 
+import com.music.bitchord.R
 import android.content.Context
 import android.media.MediaDataSource
 import android.net.Uri
@@ -192,6 +193,7 @@ object AudioCache {
     const val QUEUE_DEPTH = QUEUE_LOOKAHEAD + 1
 
     private lateinit var cache: SimpleCache
+    private var appContext: Context? = null
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -202,6 +204,7 @@ object AudioCache {
      * dropping the spans that named them.
      */
     fun init(context: Context) {
+        appContext = context.applicationContext
         evictor.maxBytes = AppSettings.audioCacheLimitBytes.value
         cache = SimpleCache(
             File(context.cacheDir, "audio"),
@@ -764,7 +767,7 @@ object AudioCache {
         get() = when (this) {
             Origin.YOUTUBE -> SourceKind.YOUTUBE.label
             Origin.JIOSAAVN -> SourceKind.JIOSAAVN.label
-            Origin.OTHER -> "Addon"
+            Origin.OTHER -> appContext?.getString(R.string.source_kind_addon) ?: "Addon"
         }
 
     private fun formatBytes(bytes: Long): String {

@@ -1,5 +1,6 @@
 package com.music.bitchord.download
 
+import com.music.bitchord.R
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -185,7 +186,7 @@ object Downloads {
             val inFlight = _active.value[id]
             if (inFlight !is DownloadState.Queued && inFlight !is DownloadState.Running) {
                 DownloadSession.queued(song, from)
-                fail(id, WIFI_ONLY_REFUSAL)
+                fail(id, context.getString(R.string.download_err_wifi_only))
             }
             return
         }
@@ -205,7 +206,7 @@ object Downloads {
             // looking accepted forever.
             Log.w(TAG, "could not start the download service: ${it.message}")
             synchronized(lock) { pending.remove(id) }
-            fail(id, "Downloads can't start right now")
+            fail(id, context.getString(R.string.download_err_cannot_start))
         }
     }
 
@@ -843,7 +844,7 @@ object Downloads {
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "download failed for $id: ${e.message}", e)
-            fail(id, e.friendly())
+            fail(id, e.friendly(context))
         }
     }
 
@@ -939,7 +940,7 @@ object Downloads {
             clear(id)
             return
         }
-        val route = plan.route ?: error("Nothing to download")
+        val route = plan.route ?: downloadError(R.string.download_err_nothing)
 
         var pending: DownloadStore.Pending? = null
         var lyrics: Deferred<LyricsTag.Embeddable?>? = null
@@ -1250,10 +1251,11 @@ object Downloads {
      * `Unsupported MIME type audio/webm` at least sends someone looking in the
      * right direction.
      */
-    private fun Exception.friendly(): String = when {
+    private fun Exception.friendly(context: Context): String = when {
+        this is DownloadError -> context.getString(res, *args)
         (this is IllegalStateException || this is IllegalArgumentException) &&
             !message.isNullOrBlank() -> message!!
-        else -> "Download failed — check your connection"
+        else -> context.getString(R.string.download_err_network)
     }
 
     /**

@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -79,24 +80,30 @@ private val BaseTypography = Typography(
 private val PretendardTypography = BaseTypography.withFamily(PretendardJP)
 private val SystemTypography = BaseTypography.withFamily(FontFamily.Default)
 
-/** Applies [family] to every style in the scale, so nothing is left on Roboto. */
+/**
+ * Applies [family] to every style in the scale, so nothing is left on Roboto,
+ * and breaks lines between Korean phrases rather than mid-word ("BitChord에서"
+ * stays whole). Phrase breaking only takes effect on Android 13+.
+ */
 private fun Typography.withFamily(family: FontFamily) = Typography(
-    displayLarge = displayLarge.copy(fontFamily = family),
-    displayMedium = displayMedium.copy(fontFamily = family),
-    displaySmall = displaySmall.copy(fontFamily = family),
-    headlineLarge = headlineLarge.copy(fontFamily = family),
-    headlineMedium = headlineMedium.copy(fontFamily = family),
-    headlineSmall = headlineSmall.copy(fontFamily = family),
-    titleLarge = titleLarge.copy(fontFamily = family),
-    titleMedium = titleMedium.copy(fontFamily = family),
-    titleSmall = titleSmall.copy(fontFamily = family),
-    bodyLarge = bodyLarge.copy(fontFamily = family),
-    bodyMedium = bodyMedium.copy(fontFamily = family),
-    bodySmall = bodySmall.copy(fontFamily = family),
-    labelLarge = labelLarge.copy(fontFamily = family),
-    labelMedium = labelMedium.copy(fontFamily = family),
-    labelSmall = labelSmall.copy(fontFamily = family),
+    displayLarge = displayLarge.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    displayMedium = displayMedium.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    displaySmall = displaySmall.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    headlineLarge = headlineLarge.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    headlineMedium = headlineMedium.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    headlineSmall = headlineSmall.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    titleLarge = titleLarge.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    titleMedium = titleMedium.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    titleSmall = titleSmall.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    bodyLarge = bodyLarge.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    bodyMedium = bodyMedium.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    bodySmall = bodySmall.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    labelLarge = labelLarge.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    labelMedium = labelMedium.copy(fontFamily = family, lineBreak = PhraseLineBreak),
+    labelSmall = labelSmall.copy(fontFamily = family, lineBreak = PhraseLineBreak),
 )
+
+private val PhraseLineBreak = LineBreak.Paragraph.copy(wordBreak = LineBreak.WordBreak.Phrase)
 
 @Composable
 fun BitChordTheme(

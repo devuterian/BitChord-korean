@@ -1,5 +1,7 @@
 package com.music.bitchord.data.sources
 
+import android.content.Context
+import androidx.annotation.StringRes
 import com.music.bitchord.data.model.Song
 import java.util.Locale
 
@@ -85,12 +87,24 @@ sealed interface StreamRequest {
  * people to re-type a password that was never wrong.
  */
 sealed interface SourceHealth {
-    data class Ok(val detail: String? = null) : SourceHealth
-    data class Unreachable(val reason: String) : SourceHealth
-    data class Rejected(val reason: String) : SourceHealth
+    /** [detailText], when set, is the localised form of [detail]; [detail] stays as the English text. */
+    data class Ok(val detail: String? = null, val detailText: SourceText? = null) : SourceHealth
+    /** [reasonText], when set, is the localised form of [reason]; [reason] stays as the English text. */
+    data class Unreachable(val reason: String, val reasonText: SourceText? = null) : SourceHealth
+    data class Rejected(val reason: String, val reasonText: SourceText? = null) : SourceHealth
 
     val isOk: Boolean get() = this is Ok
 }
+
+/** A user-facing message as a string resource plus its arguments, resolved only where it is shown. */
+class SourceText(@StringRes val res: Int, vararg val args: Any) {
+    fun resolve(context: Context): String = context.getString(res, *args)
+}
+
+/** The health's reason as the user should read it, or the English one when no resource was attached. */
+fun SourceHealth.Unreachable.reasonFor(context: Context): String = reasonText?.resolve(context) ?: reason
+fun SourceHealth.Rejected.reasonFor(context: Context): String = reasonText?.resolve(context) ?: reason
+fun SourceHealth.Ok.detailFor(context: Context): String? = detailText?.resolve(context) ?: detail
 
 /**
  * One place tracks can come from.
