@@ -997,6 +997,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 // reachable from a row's own menu on it — so the track goes
                 // into it for the same reason [addSuggestedSong] does.
                 appendToOpenPlaylist(playlist.browseId, song, added[song.videoId])
+                Downloads.autoDownload(getApplication(), playlist.browseId, song)
                 AddOutcome.ADDED
             },
             onFailure = { AddOutcome.FAILED },
@@ -1184,6 +1185,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
                     appendToOpenPlaylist(browseId, song, added[song.videoId])
+                    Downloads.autoDownload(getApplication(), browseId, song)
                 },
                 onFailure = {},
             )

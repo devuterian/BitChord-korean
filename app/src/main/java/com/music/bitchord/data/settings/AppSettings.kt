@@ -209,6 +209,9 @@ object AppSettings {
      */
     val exportDownloads = MutableStateFlow(false)
 
+    /** Download a track added to a playlist that was downloaded whole. */
+    val autoDownloadPlaylists = MutableStateFlow(true)
+
     /** Whether the active network charges for data. `null` while offline. */
     val meteredConnection = MutableStateFlow<Boolean?>(null)
 
@@ -355,6 +358,9 @@ object AppSettings {
 
     /** Freezes the main player's mesh gradient instead of letting it drift/crossfade. */
     val reduceAnimation = MutableStateFlow(false)
+
+    /** Label each tab of the bottom navigation bar under its icon. Off leaves icons only. */
+    val showNavLabels = MutableStateFlow(true)
 
     /**
      * Whether the welcome pages (party name, then YouTube sign-in) have been
@@ -855,6 +861,7 @@ object AppSettings {
         downloadQuality.value = readDownloadQuality()
         wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY_DOWNLOADS, true)
         exportDownloads.value = prefs.getBoolean(KEY_EXPORT_DOWNLOADS, false)
+        autoDownloadPlaylists.value = prefs.getBoolean(KEY_AUTO_DOWNLOAD_PLAYLISTS, true)
         crossfadeSeconds.value = prefs.getInt(KEY_CROSSFADE, 0)
         smartFadeEnabled.value = prefs.getBoolean(KEY_SMART_FADE, false)
         automixPerformanceMode.value = runCatching {
@@ -893,6 +900,7 @@ object AppSettings {
         repeatMode.value = prefs.getInt(KEY_REPEAT_MODE, Player.REPEAT_MODE_OFF)
         showNerdStats.value = prefs.getBoolean(KEY_NERD_STATS, false)
         reduceAnimation.value = prefs.getBoolean(KEY_REDUCE_ANIMATION, false)
+        showNavLabels.value = prefs.getBoolean(KEY_NAV_LABELS, true)
         onboardingComplete.value = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
         highPerformanceMode.value = prefs.getBoolean(KEY_HIGH_PERFORMANCE_MODE, false)
         performanceRefreshRate.value = normalizePerformanceRefreshRate(
@@ -1554,6 +1562,11 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_CANVAS_OVER_CELLULAR, value).apply()
     }
 
+    fun setShowNavLabels(value: Boolean) {
+        showNavLabels.value = value
+        prefs.edit().putBoolean(KEY_NAV_LABELS, value).apply()
+    }
+
     fun setSpotifyCanvasAutoHide(value: Boolean) {
         spotifyCanvasAutoHide.value = value
         prefs.edit().putBoolean(KEY_SPOTIFY_CANVAS_AUTO_HIDE, value).apply()
@@ -1593,7 +1606,7 @@ object AppSettings {
     }
 
     /**
-     * Clamped to [DEFAULT_CACHE_LIMIT_BYTES]..[MAX_CACHE_LIMIT_BYTES] — the floor is the default, not zero.
+     * Clamped to [DISABLED_CACHE_LIMIT_BYTES] | [DEFAULT_CACHE_LIMIT_BYTES]..[MAX_CACHE_LIMIT_BYTES] — 0 is disabled, the floor above zero is the default.
      * Anything past [MAX_CACHE_LIMIT_BYTES] is [UNLIMITED_CACHE_LIMIT_BYTES].
      */
     fun setAudioCacheLimitBytes(value: Long) {
@@ -1603,7 +1616,8 @@ object AppSettings {
     }
 
     private fun clampCacheLimit(value: Long): Long =
-        if (value > MAX_CACHE_LIMIT_BYTES) UNLIMITED_CACHE_LIMIT_BYTES
+        if (value == 0L) DISABLED_CACHE_LIMIT_BYTES
+        else if (value > MAX_CACHE_LIMIT_BYTES) UNLIMITED_CACHE_LIMIT_BYTES
         else value.coerceAtLeast(DEFAULT_CACHE_LIMIT_BYTES)
 
     fun setShowCacheFolder(value: Boolean) {
@@ -1680,6 +1694,11 @@ object AppSettings {
     fun setLoudnessNormalization(value: Boolean) {
         loudnessNormalization.value = value
         prefs.edit().putBoolean(KEY_LOUDNESS_NORMALIZATION, value).apply()
+    }
+
+    fun setAutoDownloadPlaylists(value: Boolean) {
+        autoDownloadPlaylists.value = value
+        prefs.edit().putBoolean(KEY_AUTO_DOWNLOAD_PLAYLISTS, value).apply()
     }
 
     fun setExportDownloads(value: Boolean) {
@@ -2083,6 +2102,9 @@ object AppSettings {
     const val DEFAULT_CACHE_LIMIT_BYTES = 512L * 1024 * 1024
     const val MAX_CACHE_LIMIT_BYTES = 10L * 1024 * 1024 * 1024
 
+    /** Cache limit set to zero means caching is fully disabled. */
+    const val DISABLED_CACHE_LIMIT_BYTES = 0L
+
     /** The cache limit with no ceiling: only free storage bounds it. */
     const val UNLIMITED_CACHE_LIMIT_BYTES = Long.MAX_VALUE
 
@@ -2108,6 +2130,7 @@ object AppSettings {
     private const val KEY_QUALITY_DOWNLOAD = "audio_quality_download"
     private const val KEY_WIFI_ONLY_DOWNLOADS = "wifi_only_downloads"
     private const val KEY_EXPORT_DOWNLOADS = "export_downloads"
+    private const val KEY_AUTO_DOWNLOAD_PLAYLISTS = "auto_download_playlists"
     private const val KEY_LOSSLESS = "lossless_audio"
     private const val KEY_CROSSFADE = "crossfade_seconds"
     private const val KEY_SMART_FADE = "smart_fade_enabled"
@@ -2134,6 +2157,7 @@ object AppSettings {
     private const val KEY_NERD_STATS = "show_nerd_stats"
     private const val KEY_CACHE_LIMIT = "audio_cache_limit_bytes"
     private const val KEY_REDUCE_ANIMATION = "reduce_animation"
+    private const val KEY_NAV_LABELS = "show_nav_labels"
     private const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
     private const val KEY_HIGH_PERFORMANCE_MODE = "high_performance_mode"
     private const val KEY_PERFORMANCE_REFRESH_RATE = "performance_refresh_rate"
