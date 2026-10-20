@@ -331,6 +331,8 @@
     <string name="theme">Theme</string>
     <string name="app_font">Font</string>
     <string name="app_font_system">System</string>
+    <string name="show_korean_charts">Show Korean charts</string>
+    <string name="show_korean_charts_subtitle">Adds Melon and Circle Chart shelves to Home. Songs are matched on YouTube Music.</string>
     <string name="reduce_animation">Reduce animation</string>
     <string name="reduce_animation_subtitle">Freezes the main player\'s gradient instead of drifting</string>
     <string name="reduce_dynamic_blur">Reduce dynamic blur</string>

@@ -387,6 +387,9 @@ object AppSettings {
     /** Hides the explicit badge beside the title in the main player. */
     val hideExplicitBadge = MutableStateFlow(false)
 
+    /** Adds the Melon and Circle Chart shelves to Home. */
+    val showKoreanCharts = MutableStateFlow(true)
+
     /** Hides the like button beside the title in the main player. */
     val hideLikeButton = MutableStateFlow(false)
 
@@ -901,6 +904,7 @@ object AppSettings {
         adaptiveStatusBarIcons.value = prefs.getBoolean(KEY_ADAPTIVE_STATUS_BAR_ICONS, true)
         hidePlayerHandle.value = prefs.getBoolean(KEY_HIDE_PLAYER_HANDLE, false)
         hideExplicitBadge.value = prefs.getBoolean(KEY_HIDE_EXPLICIT_BADGE, false)
+        showKoreanCharts.value = prefs.getBoolean(KEY_SHOW_KOREAN_CHARTS, true)
         hideLikeButton.value = prefs.getBoolean(KEY_HIDE_LIKE_BUTTON, false)
         hideLyricStrip.value = prefs.getBoolean(KEY_HIDE_LYRIC_STRIP, false)
         hideTimeLabels.value = prefs.getBoolean(KEY_HIDE_TIME_LABELS, false)
@@ -1299,6 +1303,11 @@ object AppSettings {
     fun setHideExplicitBadge(value: Boolean) {
         hideExplicitBadge.value = value
         prefs.edit().putBoolean(KEY_HIDE_EXPLICIT_BADGE, value).apply()
+    }
+
+    fun setShowKoreanCharts(value: Boolean) {
+        showKoreanCharts.value = value
+        prefs.edit().putBoolean(KEY_SHOW_KOREAN_CHARTS, value).apply()
     }
 
     fun setHideLikeButton(value: Boolean) {
@@ -2136,6 +2145,7 @@ object AppSettings {
     private const val KEY_ADAPTIVE_STATUS_BAR_ICONS = "adaptive_status_bar_icons"
     private const val KEY_HIDE_PLAYER_HANDLE = "hide_player_handle"
     private const val KEY_HIDE_EXPLICIT_BADGE = "hide_explicit_badge"
+    private const val KEY_SHOW_KOREAN_CHARTS = "show_korean_charts"
     private const val KEY_HIDE_LIKE_BUTTON = "hide_like_button"
     private const val KEY_HIDE_LYRIC_STRIP = "hide_lyric_strip"
     private const val KEY_HIDE_TIME_LABELS = "hide_time_labels"

@@ -223,6 +223,7 @@ fun SettingsScreen(
     val spatialAudio by AppSettings.spatialAudio.collectAsStateWithLifecycle()
     val nerdStats by AppSettings.showNerdStats.collectAsStateWithLifecycle()
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val showKoreanCharts by AppSettings.showKoreanCharts.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     val liquidGlass by AppSettings.liquidGlass.collectAsStateWithLifecycle()
     val liquidGlassSupported = isGlassSupported()
@@ -801,6 +802,25 @@ fun SettingsScreen(
                     selectedIndex = if (useSystemFont) 1 else 0,
                     onSelect = { AppSettings.setUseSystemFont(it == 1) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
+            val koreanChartsTitle = stringResource(R.string.show_korean_charts)
+            row(koreanChartsTitle, "melon", "circle", "chart", "home") {
+                SettingsRow(
+                    icon = Icons.Rounded.BarChart,
+                    title = koreanChartsTitle,
+                    subtitle = stringResource(R.string.show_korean_charts_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = showKoreanCharts,
+                            onCheckedChange = AppSettings::setShowKoreanCharts,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setShowKoreanCharts(!showKoreanCharts) },
                 )
             }
             val reduceAnimationTitle = stringResource(R.string.reduce_animation)

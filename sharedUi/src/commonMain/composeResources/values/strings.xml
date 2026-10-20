@@ -183,6 +183,8 @@
     <string name="shelf_mixed_for_you">Mixed for you</string>
     <string name="shelf_new_releases">New releases</string>
     <string name="shelf_quick_picks">Quick picks</string>
+    <string name="shelf_melon_top_100">Melon Top 100</string>
+    <string name="shelf_circle_chart_weekly">Circle Chart weekly</string>
     <string name="shelf_recents">Recents</string>
     <string name="shelf_recommended_music_videos">Recommended music videos</string>
     <string name="shelf_shorts">Shorts</string>

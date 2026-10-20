@@ -183,6 +183,8 @@
     <string name="shelf_mixed_for_you">맞춤 믹스</string>
     <string name="shelf_new_releases">신규 발매</string>
     <string name="shelf_quick_picks">빠른 선곡</string>
+    <string name="shelf_melon_top_100">멜론 TOP 100</string>
+    <string name="shelf_circle_chart_weekly">써클차트 주간</string>
     <string name="shelf_recents">최근 재생</string>
     <string name="shelf_recommended_music_videos">추천 뮤직비디오</string>
     <string name="shelf_shorts">Shorts</string>

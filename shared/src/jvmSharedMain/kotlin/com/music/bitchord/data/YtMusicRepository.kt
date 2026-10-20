@@ -1,6 +1,7 @@
 package com.music.bitchord.data
 
 import com.music.bitchord.data.DebugLog as Log
+import com.music.bitchord.data.charts.KoreanCharts
 import com.music.bitchord.data.innertube.Innertube
 import com.music.bitchord.data.innertube.InnertubeParser
 import com.music.bitchord.data.model.Account
@@ -21,6 +22,7 @@ import com.music.bitchord.data.model.SearchFilter
 import com.music.bitchord.data.model.SearchResult
 import com.music.bitchord.data.model.ShelfItem
 import com.music.bitchord.data.model.Song
+import com.music.bitchord.data.model.durationMillis
 import com.music.bitchord.data.model.SongMenu
 import com.music.bitchord.data.model.UserPlaylist
 import com.music.bitchord.data.sources.TrackMatcher
@@ -29,6 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import java.util.Locale
@@ -38,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap
 object YtMusicRepository {
 
     private const val TAG = "BitChord"
+    private const val CHART_LOOKUP_CONCURRENCY = 5
     private val moodGenreShelfCache = ConcurrentHashMap<String, List<HomeShelf>>()
     // Includes unchanged video fallbacks as well as successful matches. The
     // queue prefetcher asks before a track becomes current; remembering its
@@ -71,6 +76,64 @@ object YtMusicRepository {
     /** Extra Play shelves are independently fetchable so each can appear as soon as it arrives. */
     suspend fun homeSupplement(browseId: String): Result<List<HomeShelf>> = call("home:$browseId") {
         shelvesOf(browseId)
+    }
+
+    /**
+     * Melon's TOP 100 and Circle Chart's weekly chart as playable shelves, in chart order.
+     *
+     * Each chart's first [KoreanCharts.RESOLVE_COUNT] rows are looked up as YouTube Music
+     * songs, a few at a time. A row with no result, or whose length is more than
+     * [KoreanCharts.DURATION_TOLERANCE_SECONDS] off the chart's (Melon only; Circle gives no
+     * length), is skipped rather than replaced by a guess. Finished shelves are kept on disk
+     * for [KoreanCharts.CACHE_TTL_MS] so opening Home doesn't repeat the lookups. A chart
+     * that can't be fetched or resolved is left out; this never throws.
+     */
+    suspend fun koreanChartShelves(): List<HomeShelf> = coroutineScope {
+        listOf(
+            async { koreanChartShelf("melon", KoreanCharts.MELON_TITLE) { KoreanCharts.fetchMelon() } },
+            async { koreanChartShelf("circle", KoreanCharts.CIRCLE_TITLE) { KoreanCharts.fetchCircle() } },
+        ).awaitAll().filterNotNull()
+    }
+
+    private suspend fun koreanChartShelf(
+        name: String,
+        title: String,
+        fetch: suspend () -> List<KoreanCharts.Entry>,
+    ): HomeShelf? {
+        KoreanCharts.readCached(name, title)?.let { return it }
+        return try {
+            val entries = fetch().take(KoreanCharts.RESOLVE_COUNT)
+            if (entries.isEmpty()) return null
+            val gate = Semaphore(CHART_LOOKUP_CONCURRENCY)
+            val songs = coroutineScope {
+                entries.map { entry ->
+                    async { gate.withPermit { resolveChartEntry(entry) } }
+                }.awaitAll()
+            }
+            val items = songs.filterNotNull()
+                .distinctBy { it.videoId }
+                .map { ShelfItem(it.title, it.artist, it.thumbnailUrl, it.videoId, null) }
+            if (items.isEmpty()) return null
+            HomeShelf(title = title, items = items).also { KoreanCharts.writeCached(name, it) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            Log.w(TAG, "chart $name failed: ${failure.message}")
+            null
+        }
+    }
+
+    private suspend fun resolveChartEntry(entry: KoreanCharts.Entry): Song? {
+        val page = searchPage("${entry.title} ${entry.artist}".trim(), SearchFilter.SONGS).getOrNull() ?: return null
+        val song = page.rows.firstNotNullOfOrNull {
+            when (it) {
+                is SearchResult.TopTrack -> it.song
+                is SearchResult.Track -> it.song
+                is SearchResult.Browse -> null
+            }
+        } ?: return null
+        val matchSeconds = (song.durationMillis() / 1000).toInt()
+        return song.takeIf { KoreanCharts.durationAcceptable(entry.durationSeconds, matchSeconds) }
     }
 
     val HOME_SUPPLEMENT_BROWSE_IDS = listOf(
