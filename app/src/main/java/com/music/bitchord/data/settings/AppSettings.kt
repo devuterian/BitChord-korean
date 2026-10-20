@@ -378,8 +378,44 @@ object AppSettings {
     /** Hides the device status bar (clock, battery, notifications) while the main player is open. */
     val hideStatusBarInPlayer = MutableStateFlow(false)
 
+    /** Turns the player's status bar glyphs dark over a bright cover instead of shading the cover. */
+    val adaptiveStatusBarIcons = MutableStateFlow(true)
+
+    /** Hides the drag handle at the top of the main player. */
+    val hidePlayerHandle = MutableStateFlow(false)
+
+    /** Hides the explicit badge beside the title in the main player. */
+    val hideExplicitBadge = MutableStateFlow(false)
+
+    /** Hides the like button beside the title in the main player. */
+    val hideLikeButton = MutableStateFlow(false)
+
+    /** Hides the single current lyric line above the scrubber. */
+    val hideLyricStrip = MutableStateFlow(false)
+
+    /** Hides the elapsed and remaining time under the scrubber. */
+    val hideTimeLabels = MutableStateFlow(false)
+
+    /** Hides the Lossless / Hi-Res badge under the scrubber. */
+    val hideQualityBadge = MutableStateFlow(false)
+
+    /** Hides the Automix sheen, transition marker and "Mixing" label. */
+    val hideMixingIndicator = MutableStateFlow(false)
+
+    /** Hides the Listen Together half of the output capsule. */
+    val hideListenTogetherButton = MutableStateFlow(false)
+
+    /** Hides the output device or party name under the bottom row. */
+    val hideOutputCaption = MutableStateFlow(false)
+
     /** Hides the "Playing from" / "Played by" caption at the top of the main player. */
     val hideSongStatus = MutableStateFlow(false)
+
+    /** Sets the app in the platform font instead of the bundled Pretendard JP. */
+    val useSystemFont = MutableStateFlow(false)
+
+    /** Share hands out youtu.be / youtube.com links instead of music.youtube.com ones. */
+    val shortShareLinks = MutableStateFlow(true)
 
     val showQueueHistory = MutableStateFlow(false)
 
@@ -862,7 +898,19 @@ object AppSettings {
         stopOnTaskRemoved.value = prefs.getBoolean(KEY_STOP_ON_TASK_REMOVED, false)
         hideVolumeBar.value = prefs.getBoolean(KEY_HIDE_VOLUME_BAR, false)
         hideStatusBarInPlayer.value = prefs.getBoolean(KEY_HIDE_STATUS_BAR_IN_PLAYER, false)
+        adaptiveStatusBarIcons.value = prefs.getBoolean(KEY_ADAPTIVE_STATUS_BAR_ICONS, true)
+        hidePlayerHandle.value = prefs.getBoolean(KEY_HIDE_PLAYER_HANDLE, false)
+        hideExplicitBadge.value = prefs.getBoolean(KEY_HIDE_EXPLICIT_BADGE, false)
+        hideLikeButton.value = prefs.getBoolean(KEY_HIDE_LIKE_BUTTON, false)
+        hideLyricStrip.value = prefs.getBoolean(KEY_HIDE_LYRIC_STRIP, false)
+        hideTimeLabels.value = prefs.getBoolean(KEY_HIDE_TIME_LABELS, false)
+        hideQualityBadge.value = prefs.getBoolean(KEY_HIDE_QUALITY_BADGE, false)
+        hideMixingIndicator.value = prefs.getBoolean(KEY_HIDE_MIXING_INDICATOR, false)
+        hideListenTogetherButton.value = prefs.getBoolean(KEY_HIDE_LISTEN_TOGETHER_BUTTON, false)
+        hideOutputCaption.value = prefs.getBoolean(KEY_HIDE_OUTPUT_CAPTION, false)
         hideSongStatus.value = prefs.getBoolean(KEY_HIDE_SONG_STATUS, false)
+        useSystemFont.value = prefs.getBoolean(KEY_USE_SYSTEM_FONT, false)
+        shortShareLinks.value = prefs.getBoolean(KEY_SHORT_SHARE_LINKS, true)
         showQueueHistory.value = prefs.getBoolean(KEY_SHOW_QUEUE_HISTORY, false)
         swipeToPlayNext.value = prefs.getBoolean(KEY_SWIPE_TO_PLAY_NEXT, false)
         dontRepeatSuggestions.value = prefs.getBoolean(KEY_DONT_REPEAT_SUGGESTIONS, false)
@@ -1243,9 +1291,69 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_HIDE_STATUS_BAR_IN_PLAYER, value).apply()
     }
 
+    fun setHidePlayerHandle(value: Boolean) {
+        hidePlayerHandle.value = value
+        prefs.edit().putBoolean(KEY_HIDE_PLAYER_HANDLE, value).apply()
+    }
+
+    fun setHideExplicitBadge(value: Boolean) {
+        hideExplicitBadge.value = value
+        prefs.edit().putBoolean(KEY_HIDE_EXPLICIT_BADGE, value).apply()
+    }
+
+    fun setHideLikeButton(value: Boolean) {
+        hideLikeButton.value = value
+        prefs.edit().putBoolean(KEY_HIDE_LIKE_BUTTON, value).apply()
+    }
+
+    fun setHideLyricStrip(value: Boolean) {
+        hideLyricStrip.value = value
+        prefs.edit().putBoolean(KEY_HIDE_LYRIC_STRIP, value).apply()
+    }
+
+    fun setHideTimeLabels(value: Boolean) {
+        hideTimeLabels.value = value
+        prefs.edit().putBoolean(KEY_HIDE_TIME_LABELS, value).apply()
+    }
+
+    fun setHideQualityBadge(value: Boolean) {
+        hideQualityBadge.value = value
+        prefs.edit().putBoolean(KEY_HIDE_QUALITY_BADGE, value).apply()
+    }
+
+    fun setHideMixingIndicator(value: Boolean) {
+        hideMixingIndicator.value = value
+        prefs.edit().putBoolean(KEY_HIDE_MIXING_INDICATOR, value).apply()
+    }
+
+    fun setHideListenTogetherButton(value: Boolean) {
+        hideListenTogetherButton.value = value
+        prefs.edit().putBoolean(KEY_HIDE_LISTEN_TOGETHER_BUTTON, value).apply()
+    }
+
+    fun setHideOutputCaption(value: Boolean) {
+        hideOutputCaption.value = value
+        prefs.edit().putBoolean(KEY_HIDE_OUTPUT_CAPTION, value).apply()
+    }
+
+    fun setAdaptiveStatusBarIcons(value: Boolean) {
+        adaptiveStatusBarIcons.value = value
+        prefs.edit().putBoolean(KEY_ADAPTIVE_STATUS_BAR_ICONS, value).apply()
+    }
+
     fun setHideSongStatus(value: Boolean) {
         hideSongStatus.value = value
         prefs.edit().putBoolean(KEY_HIDE_SONG_STATUS, value).apply()
+    }
+
+    fun setShortShareLinks(value: Boolean) {
+        shortShareLinks.value = value
+        prefs.edit().putBoolean(KEY_SHORT_SHARE_LINKS, value).apply()
+    }
+
+    fun setUseSystemFont(value: Boolean) {
+        useSystemFont.value = value
+        prefs.edit().putBoolean(KEY_USE_SYSTEM_FONT, value).apply()
     }
 
     fun setShowQueueHistory(value: Boolean) {
@@ -2024,6 +2132,18 @@ object AppSettings {
     private const val KEY_HIDE_VOLUME_BAR = "hide_volume_bar"
     private const val KEY_HIDE_STATUS_BAR_IN_PLAYER = "hide_status_bar_in_player"
     private const val KEY_HIDE_SONG_STATUS = "hide_song_status"
+    private const val KEY_USE_SYSTEM_FONT = "use_system_font"
+    private const val KEY_ADAPTIVE_STATUS_BAR_ICONS = "adaptive_status_bar_icons"
+    private const val KEY_HIDE_PLAYER_HANDLE = "hide_player_handle"
+    private const val KEY_HIDE_EXPLICIT_BADGE = "hide_explicit_badge"
+    private const val KEY_HIDE_LIKE_BUTTON = "hide_like_button"
+    private const val KEY_HIDE_LYRIC_STRIP = "hide_lyric_strip"
+    private const val KEY_HIDE_TIME_LABELS = "hide_time_labels"
+    private const val KEY_HIDE_QUALITY_BADGE = "hide_quality_badge"
+    private const val KEY_HIDE_MIXING_INDICATOR = "hide_mixing_indicator"
+    private const val KEY_HIDE_LISTEN_TOGETHER_BUTTON = "hide_listen_together_button"
+    private const val KEY_HIDE_OUTPUT_CAPTION = "hide_output_caption"
+    private const val KEY_SHORT_SHARE_LINKS = "short_share_links"
     private const val KEY_SHOW_QUEUE_HISTORY = "show_queue_history"
     private const val KEY_SWIPE_TO_PLAY_NEXT = "swipe_to_play_next"
     private const val KEY_DONT_REPEAT_SUGGESTIONS = "dont_repeat_suggestions"

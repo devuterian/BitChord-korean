@@ -128,6 +128,7 @@ import com.music.bitchord.auth.SpotifyLoginScreen
 import com.music.bitchord.auth.WebSessionMode
 import com.music.bitchord.auth.YtMusicLoginScreen
 import com.music.bitchord.data.AppUpdateChecker
+import com.music.bitchord.data.ShareLinks
 import com.music.bitchord.data.LocalMediaRepository
 import com.music.bitchord.data.listentogether.JamInviteLink
 import com.music.bitchord.data.listentogether.ListenTogether
@@ -4223,7 +4224,7 @@ private fun BitChordApp(
             val share: () -> Unit = {
                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.videoId}")
+                    putExtra(Intent.EXTRA_TEXT, ShareLinks.song(song.videoId))
                 }
                 context.startActivity(Intent.createChooser(sendIntent, song.title))
                 songActions = null
@@ -4746,7 +4747,7 @@ private fun BitChordApp(
                     ?.let { id ->
                         {
                             val url = if (target.type == BrowseType.PLAYLIST) {
-                                "https://music.youtube.com/playlist?list=${id.removePrefix("VL")}"
+                                ShareLinks.playlist(id.removePrefix("VL"))
                             } else {
                                 "https://music.youtube.com/browse/$id"
                             }

@@ -281,6 +281,16 @@ private const val HERO_FADE_FRACTION = 0.42f
 private const val SUBVIEW_STATUS_SCRIM_MIN_ALPHA = 0.40f
 
 /**
+ * Top-band relative luminance from which a full-bleed cover counts as bright
+ * enough for dark status bar glyphs: about 70% grey, where white glyphs would
+ * otherwise need most of the scrim to stay legible.
+ */
+private const val BRIGHT_COVER_LUMINANCE = 0.42f
+
+/** The handle and caption over a bright cover, matching the dark status bar glyphs. */
+private val DARK_TOP_CHROME = Color.Black.copy(alpha = 0.78f)
+
+/**
  * How often the backdrop re-reads the colours of a playing Canvas clip.
  *
  * Every three seconds, with `MESH_FADE_MS` easing each read into the last so
@@ -760,10 +770,9 @@ fun NowPlayingScreen(
     // colour to give.
     val artworkTint = rememberPlayerTint(remoteArt, ART_PX) ?: Color.White
 
-    // Media-player convention: the player always owns light status icons. The
-    // top treatment below, rather than a window-flag flip per cover, provides
-    // their contrast and stays visually stable through artwork transitions.
-    StatusBarIcons(dark = false)
+    // Media-player convention: the player owns light status icons, and the
+    // top treatment below provides their contrast. A bright full-bleed cover
+    // is the exception, see [brightCoverUnderStatusBar].
     // Composed only while the player is, so closing it brings the bar back.
     // The layout below reads [stableStatusBarInsets] and keeps its place.
     val hideStatusBar by PlayerSettings.hideStatusBar.collectAsStateWithLifecycle()
@@ -790,6 +799,9 @@ fun NowPlayingScreen(
     val openListenTogetherMembers: () -> Unit = { showListenTogetherMembers = true }
 
     val syncedLyricsEnabled by PlayerSettings.syncedLyrics.collectAsStateWithLifecycle()
+    val hideLyricStrip by PlayerSettings.hideLyricStrip.collectAsStateWithLifecycle()
+    val hidePlayerHandle by PlayerSettings.hidePlayerHandle.collectAsStateWithLifecycle()
+    val hideOutputCaption by PlayerSettings.hideOutputCaption.collectAsStateWithLifecycle()
     val lyricsOffsetMs by PlayerSettings.lyricsOffsetMs.collectAsStateWithLifecycle()
     // A lambda, not a value: read by the lyric strip and panel in scopes of
     // their own, so a tick recomposes them and not the player around them.
@@ -1510,11 +1522,13 @@ fun NowPlayingScreen(
             modifier = Modifier.fillMaxWidth().height(20.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
-            OutputCaption(
-                accountName = accountName,
-                onOpenOutput = openAudioOutput,
-                onOpenMembers = openListenTogetherMembers,
-            )
+            if (!hideOutputCaption) {
+                OutputCaption(
+                    accountName = accountName,
+                    onOpenOutput = openAudioOutput,
+                    onOpenMembers = openListenTogetherMembers,
+                )
+            }
         }
     }
 
@@ -1723,6 +1737,22 @@ fun NowPlayingScreen(
         animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
         label = "playerTint",
     )
+    // Over a bright full-bleed cover the glyphs, the handle and the caption go
+    // dark rather than the cover being shaded to keep them white. Only while
+    // the still cover itself is what sits under the status bar: a clip, a
+    // subview's mesh or the landscape layout keep the light treatment.
+    val adaptiveStatusBarIcons by PlayerSettings.adaptiveStatusBarIcons.collectAsStateWithLifecycle()
+    val brightCoverUnderStatusBar = adaptiveStatusBarIcons && heroMode && !landscape &&
+        heroClip == null && !spotifyCanvasPresentation &&
+        !(lyricsOpen || queueOpen || lyricsOffsetOpen || showAudioPipeline || showCast ||
+            showAudioOutput || showLyricsProviders || lyricsShare != null) &&
+        (artTopLuminance ?: 0f) >= BRIGHT_COVER_LUMINANCE
+    StatusBarIcons(dark = brightCoverUnderStatusBar)
+    val topChromeTint by animateColorAsState(
+        targetValue = if (brightCoverUnderStatusBar) DARK_TOP_CHROME else playerTint,
+        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+        label = "topChromeTint",
+    )
     CompositionLocalProvider(LocalPlayerTint provides playerTint) {
         if (landscape) {
             // Paused always wins outright over a scrub in progress — see
@@ -1895,7 +1925,7 @@ fun NowPlayingScreen(
                                     onOpenArtist = onOpenArtist,
                                 )
                             },
-                            lyricStrip = if (syncedLyricsEnabled) {
+                            lyricStrip = if (syncedLyricsEnabled && !hideLyricStrip) {
                                 {
                                     CurrentLyricStrip(
                                         lines = lyricsTranslation.displayedLyrics,
@@ -2186,6 +2216,8 @@ fun NowPlayingScreen(
                     lyricsShare != null
                 val topGradientAlpha = if (playerSubviewOpen) {
                     maxOf(artworkStatusScrimAlpha, SUBVIEW_STATUS_SCRIM_MIN_ALPHA)
+                } else if (brightCoverUnderStatusBar) {
+                    0f
                 } else {
                     artworkStatusScrimAlpha
                 }
@@ -2351,45 +2383,49 @@ fun NowPlayingScreen(
                             },
                         contentAlignment = Alignment.Center,
                     ) {
-                        // While the origin caption is present the handle belongs at
-                        // the top of the strip. As lyrics or the queue replace the
-                        // album-cover player, it glides into the now-empty strip's
-                        // vertical centre alongside the caption's fade.
-                        Box(
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .offset {
-                                    IntOffset(
-                                        x = 0,
-                                        y = lerp(
-                                            6.dp,
-                                            (topStrip - 5.dp).coerceAtLeast(0.dp) / 2,
-                                            p(),
-                                        ).roundToPx(),
+                        CompositionLocalProvider(LocalPlayerTint provides topChromeTint) {
+                            // While the origin caption is present the handle belongs at
+                            // the top of the strip. As lyrics or the queue replace the
+                            // album-cover player, it glides into the now-empty strip's
+                            // vertical centre alongside the caption's fade.
+                            if (!hidePlayerHandle) {
+                                Box(
+                                    Modifier
+                                        .align(Alignment.TopCenter)
+                                        .offset {
+                                            IntOffset(
+                                                x = 0,
+                                                y = lerp(
+                                                    6.dp,
+                                                    (topStrip - 5.dp).coerceAtLeast(0.dp) / 2,
+                                                    p(),
+                                                ).roundToPx(),
+                                            )
+                                        }
+                                        .width(38.dp)
+                                        .height(5.dp)
+                                        .graphicsLayer { alpha = spotifyChromeAlpha }
+                                        .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(LocalPlayerTint.current.copy(alpha = 0.70f)),
+                                )
+                            }
+                            // [p] is the shared album-to-panel transition. Keeping this in
+                            // composition until its final frame gives the caption a real
+                            // fade on both entry and exit, but removes its click target
+                            // entirely once lyrics or the queue owns the player.
+                            if (!hideSongStatus) {
+                                WhileShown({ !collapseAlmostDone }) {
+                                    PlaybackOriginCaption(
+                                        text = playbackOriginText(song, playedBy),
+                                        onClick = openPlaybackOrigin,
+                                        textAlign = TextAlign.Center,
+                                        contentPadding = PaddingValues(start = PLAYER_GUTTER, end = PLAYER_GUTTER, bottom = 1.dp),
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .graphicsLayer { alpha = (1f - p()) * spotifyChromeAlpha },
                                     )
                                 }
-                                .width(38.dp)
-                                .height(5.dp)
-                                .graphicsLayer { alpha = spotifyChromeAlpha }
-                                .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(LocalPlayerTint.current.copy(alpha = 0.70f)),
-                        )
-                        // [p] is the shared album-to-panel transition. Keeping this in
-                        // composition until its final frame gives the caption a real
-                        // fade on both entry and exit, but removes its click target
-                        // entirely once lyrics or the queue owns the player.
-                        if (!hideSongStatus) {
-                            WhileShown({ !collapseAlmostDone }) {
-                                PlaybackOriginCaption(
-                                    text = playbackOriginText(song, playedBy),
-                                    onClick = openPlaybackOrigin,
-                                    textAlign = TextAlign.Center,
-                                    contentPadding = PaddingValues(start = PLAYER_GUTTER, end = PLAYER_GUTTER, bottom = 1.dp),
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .graphicsLayer { alpha = (1f - p()) * spotifyChromeAlpha },
-                                )
                             }
                         }
                     }
@@ -3233,7 +3269,9 @@ fun NowPlayingScreen(
                                             ),
                                             color = Color.White,
                                             enabled = scrolling,
-                                            leading = if (song.isExplicit == true) {
+                                            leading = if (song.isExplicit == true &&
+                                                !PlayerSettings.hideExplicitBadge.collectAsStateWithLifecycle().value
+                                            ) {
                                                 { ExplicitBadge(color = Color.White) }
                                             } else {
                                                 null
@@ -3270,7 +3308,9 @@ fun NowPlayingScreen(
                             // there's no account to record it against — and neither
                             // does a local file or a finished download, which carries
                             // no YouTube identity to rate.
-                            if (signedIn && song.localUri == null) {
+                            if (signedIn && song.localUri == null &&
+                                !PlayerSettings.hideLikeButton.collectAsStateWithLifecycle().value
+                            ) {
                                 val liked = likeStatus == LikeStatus.LIKE
                                 CircleGlyph(
                                     icon = if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart,
@@ -3541,7 +3581,7 @@ fun NowPlayingScreen(
                     // accompanied by a dedicated lyrics button in the bottom row. Its
                     // one-line slot remains, invisibly, so opening lyrics cannot grow
                     // the half-player merely to make room for the source label.
-                    if (!lyricsOpen && syncedLyricsEnabled) {
+                    if (!lyricsOpen && syncedLyricsEnabled && !hideLyricStrip) {
                         CurrentLyricStrip(
                             lines = lyricsTranslation.displayedLyrics,
                             trackKey = song.videoId,
@@ -3557,7 +3597,7 @@ fun NowPlayingScreen(
                             onClick = openLyrics,
                         )
                     }
-                    if (!lyricsOpen && !syncedLyricsEnabled) {
+                    if (!lyricsOpen && (!syncedLyricsEnabled || hideLyricStrip)) {
                         Text(
                             text = "\u00A0",
                             style = MaterialTheme.typography.titleMedium,

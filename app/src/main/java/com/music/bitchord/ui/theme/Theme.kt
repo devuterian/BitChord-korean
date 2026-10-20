@@ -8,6 +8,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.music.bitchord.R
+import com.music.bitchord.data.settings.AppSettings
 
 // Apple Music's signature red. No longer the primary accent, but kept for the
 // spots (Replay's rank badge) that want that specific red regardless of theme.
@@ -47,20 +50,21 @@ private val LightColors = lightColorScheme(
 )
 
 /**
- * SF Pro Display, the face Apple Music itself is set in. Only the weights the
- * type scale actually asks for are bundled; Compose synthesises nothing, so a
- * missing weight would silently fall back to the nearest one shipped.
+ * Pretendard JP, set for Korean first with the Japanese kana and kanji that
+ * titles often carry. Only the weights the type scale actually asks for are
+ * bundled; Compose synthesises nothing, so a missing weight would silently
+ * fall back to the nearest one shipped.
  */
-val SFProDisplay = FontFamily(
-    Font(R.font.sf_pro_display_regular, FontWeight.W400),
-    Font(R.font.sf_pro_display_medium, FontWeight.W500),
-    Font(R.font.sf_pro_display_semibold, FontWeight.W600),
-    Font(R.font.sf_pro_display_bold, FontWeight.W700),
-    Font(R.font.sf_pro_display_heavy, FontWeight.W800),
+val PretendardJP = FontFamily(
+    Font(R.font.pretendard_jp_regular, FontWeight.W400),
+    Font(R.font.pretendard_jp_medium, FontWeight.W500),
+    Font(R.font.pretendard_jp_semibold, FontWeight.W600),
+    Font(R.font.pretendard_jp_bold, FontWeight.W700),
+    Font(R.font.pretendard_jp_extrabold, FontWeight.W800),
 )
 
 // Heavy, tight typography — the backbone of the Apple Music look.
-private val BitChordTypography = Typography(
+private val BaseTypography = Typography(
     displayLarge = TextStyle(fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
     headlineLarge = TextStyle(fontWeight = FontWeight.W800, fontSize = 30.sp, letterSpacing = (-0.7).sp),
     headlineMedium = TextStyle(fontWeight = FontWeight.W700, fontSize = 22.sp, letterSpacing = (-0.4).sp),
@@ -70,7 +74,10 @@ private val BitChordTypography = Typography(
     bodyMedium = TextStyle(fontWeight = FontWeight.W400, fontSize = 14.sp),
     labelMedium = TextStyle(fontWeight = FontWeight.W600, fontSize = 12.sp),
     labelSmall = TextStyle(fontWeight = FontWeight.W600, fontSize = 11.sp),
-).withFamily(SFProDisplay)
+)
+
+private val PretendardTypography = BaseTypography.withFamily(PretendardJP)
+private val SystemTypography = BaseTypography.withFamily(FontFamily.Default)
 
 /** Applies [family] to every style in the scale, so nothing is left on Roboto. */
 private fun Typography.withFamily(family: FontFamily) = Typography(
@@ -96,9 +103,10 @@ fun BitChordTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    val useSystemFont by AppSettings.useSystemFont.collectAsState()
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = BitChordTypography,
+        typography = if (useSystemFont) SystemTypography else PretendardTypography,
         content = content,
     )
 }

@@ -36,6 +36,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.Contrast
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.HighQuality
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Lyrics
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Explicit
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -242,6 +253,18 @@ fun SettingsScreen(
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
+    val useSystemFont by AppSettings.useSystemFont.collectAsStateWithLifecycle()
+    val adaptiveStatusBarIcons by AppSettings.adaptiveStatusBarIcons.collectAsStateWithLifecycle()
+    val hidePlayerHandle by AppSettings.hidePlayerHandle.collectAsStateWithLifecycle()
+    val hideExplicitBadge by AppSettings.hideExplicitBadge.collectAsStateWithLifecycle()
+    val hideLikeButton by AppSettings.hideLikeButton.collectAsStateWithLifecycle()
+    val hideLyricStrip by AppSettings.hideLyricStrip.collectAsStateWithLifecycle()
+    val hideTimeLabels by AppSettings.hideTimeLabels.collectAsStateWithLifecycle()
+    val hideQualityBadge by AppSettings.hideQualityBadge.collectAsStateWithLifecycle()
+    val hideMixingIndicator by AppSettings.hideMixingIndicator.collectAsStateWithLifecycle()
+    val hideListenTogetherButton by AppSettings.hideListenTogetherButton.collectAsStateWithLifecycle()
+    val hideOutputCaption by AppSettings.hideOutputCaption.collectAsStateWithLifecycle()
+    val shortShareLinks by AppSettings.shortShareLinks.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
@@ -768,6 +791,16 @@ fun SettingsScreen(
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
+            val appFontTitle = stringResource(R.string.app_font)
+            row(appFontTitle, "font", "typeface", "pretendard") {
+                SettingsRow(icon = Icons.Rounded.TextFields, title = appFontTitle)
+                SegmentedControl(
+                    options = listOf("Pretendard JP", stringResource(R.string.app_font_system)),
+                    selectedIndex = if (useSystemFont) 1 else 0,
+                    onSelect = { AppSettings.setUseSystemFont(it == 1) },
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
             val reduceAnimationTitle = stringResource(R.string.reduce_animation)
             row(reduceAnimationTitle, "motion") {
                 SettingsRow(
@@ -1052,6 +1085,68 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+
+        SearchableSettingsGroup(
+            search,
+            header = stringResource(R.string.player_screen),
+            footer = stringResource(R.string.player_screen_footer),
+        ) {
+            val adaptiveStatusBarTitle = stringResource(R.string.adaptive_status_bar_icons)
+            row(adaptiveStatusBarTitle, "status bar", "dark", "icons", "cover") {
+                SettingsRow(
+                    icon = Icons.Rounded.Contrast,
+                    title = adaptiveStatusBarTitle,
+                    subtitle = stringResource(R.string.adaptive_status_bar_icons_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = adaptiveStatusBarIcons,
+                            onCheckedChange = AppSettings::setAdaptiveStatusBarIcons,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setAdaptiveStatusBarIcons(!adaptiveStatusBarIcons) },
+                )
+            }
+            // One switch per piece of the main player, on while it is shown.
+            // The stored settings are hides, so a fresh install shows everything.
+            fun playerToggle(
+                title: String,
+                icon: ImageVector,
+                shown: Boolean,
+                setShown: (Boolean) -> Unit,
+                vararg keywords: String,
+            ) = row(title, *keywords, "player") {
+                SettingsRow(
+                    icon = icon,
+                    title = title,
+                    trailing = {
+                        Switch(
+                            checked = shown,
+                            onCheckedChange = setShown,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { setShown(!shown) },
+                )
+            }
+            playerToggle(stringResource(R.string.show_player_handle), Icons.Rounded.DragHandle, !hidePlayerHandle, { AppSettings.setHidePlayerHandle(it.not()) }, "handle", "grabber")
+            playerToggle(stringResource(R.string.show_playing_from), Icons.Rounded.LibraryMusic, !hideSongStatus, { AppSettings.setHideSongStatus(it.not()) }, "playing from", "played by", "caption")
+            playerToggle(stringResource(R.string.show_explicit_badge), Icons.Rounded.Explicit, !hideExplicitBadge, { AppSettings.setHideExplicitBadge(it.not()) }, "explicit", "badge")
+            playerToggle(stringResource(R.string.show_like_button), Icons.Rounded.FavoriteBorder, !hideLikeButton, { AppSettings.setHideLikeButton(it.not()) }, "like", "heart")
+            playerToggle(stringResource(R.string.show_lyric_strip), Icons.Rounded.Lyrics, !hideLyricStrip, { AppSettings.setHideLyricStrip(it.not()) }, "lyrics", "line")
+            playerToggle(stringResource(R.string.show_time_labels), Icons.Rounded.Schedule, !hideTimeLabels, { AppSettings.setHideTimeLabels(it.not()) }, "time", "elapsed", "remaining")
+            playerToggle(stringResource(R.string.show_quality_badge), Icons.Rounded.HighQuality, !hideQualityBadge, { AppSettings.setHideQualityBadge(it.not()) }, "lossless", "hi-res", "quality", "badge")
+            playerToggle(stringResource(R.string.show_mixing_indicator), Icons.Rounded.AutoAwesome, !hideMixingIndicator, { AppSettings.setHideMixingIndicator(it.not()) }, "automix", "mixing")
+            playerToggle(stringResource(R.string.show_volume_bar), Icons.Rounded.VolumeUp, !hideVolumeBar, { AppSettings.setHideVolumeBar(it.not()) }, "volume")
+            playerToggle(stringResource(R.string.show_listen_together_button), Icons.Rounded.Group, !hideListenTogetherButton, { AppSettings.setHideListenTogetherButton(it.not()) }, "listen together", "party")
+            playerToggle(stringResource(R.string.show_output_caption), Icons.Rounded.Headphones, !hideOutputCaption, { AppSettings.setHideOutputCaption(it.not()) }, "output", "device", "bluetooth")
         }
 
         SearchableSettingsGroup(search, header = stringResource(R.string.performance)) {
@@ -1354,25 +1449,6 @@ fun SettingsScreen(
                     onClick = { AppSettings.setStopOnTaskRemoved(!stopOnTaskRemoved) },
                 )
             }
-            val hideVolumeBarTitle = stringResource(R.string.hide_volume_bar)
-            row(hideVolumeBarTitle, "volume", "player") {
-                SettingsRow(
-                    icon = Icons.Rounded.VolumeOff,
-                    title = hideVolumeBarTitle,
-                    subtitle = stringResource(R.string.hide_volume_bar_subtitle),
-                    trailing = {
-                        Switch(
-                            checked = hideVolumeBar,
-                            onCheckedChange = AppSettings::setHideVolumeBar,
-                            colors = SwitchDefaults.colors(
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                checkedBorderColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        )
-                    },
-                    onClick = { AppSettings.setHideVolumeBar(!hideVolumeBar) },
-                )
-            }
             val hideStatusBarTitle = stringResource(R.string.hide_status_bar_in_player)
             row(hideStatusBarTitle, "status bar", "immersive", "fullscreen", "player") {
                 SettingsRow(
@@ -1411,23 +1487,23 @@ fun SettingsScreen(
                     onClick = { AppSettings.setShowQueueHistory(!showQueueHistory) },
                 )
             }
-            val hideSongStatusTitle = stringResource(R.string.hide_song_status)
-            row(hideSongStatusTitle, "player", "playing from", "played by") {
+            val shortShareLinksTitle = stringResource(R.string.short_share_links)
+            row(shortShareLinksTitle, "share", "link", "youtu.be", "copy") {
                 SettingsRow(
-                    icon = Icons.Rounded.VisibilityOff,
-                    title = hideSongStatusTitle,
-                    subtitle = stringResource(R.string.hide_song_status_subtitle),
+                    icon = Icons.Rounded.Link,
+                    title = shortShareLinksTitle,
+                    subtitle = stringResource(R.string.short_share_links_subtitle),
                     trailing = {
                         Switch(
-                            checked = hideSongStatus,
-                            onCheckedChange = AppSettings::setHideSongStatus,
+                            checked = shortShareLinks,
+                            onCheckedChange = AppSettings::setShortShareLinks,
                             colors = SwitchDefaults.colors(
                                 checkedTrackColor = MaterialTheme.colorScheme.primary,
                                 checkedBorderColor = MaterialTheme.colorScheme.primary,
                             ),
                         )
                     },
-                    onClick = { AppSettings.setHideSongStatus(!hideSongStatus) },
+                    onClick = { AppSettings.setShortShareLinks(!shortShareLinks) },
                 )
             }
         }

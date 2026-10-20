@@ -20,6 +20,7 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
 import com.music.bitchord.R
+import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.data.model.CARD_ART_PX
 import com.music.bitchord.data.model.artworkAt
 import com.music.bitchord.data.stats.ReplaySummary
@@ -728,9 +729,10 @@ internal fun ellipsised(text: String, paint: Paint, width: Float): String {
  * share button.
  */
 internal class Fonts(context: Context) {
-    private val heavy = font(context, R.font.sf_pro_display_heavy) ?: Typeface.DEFAULT_BOLD
-    private val semibold = font(context, R.font.sf_pro_display_semibold) ?: Typeface.DEFAULT_BOLD
-    private val regular = font(context, R.font.sf_pro_display_regular) ?: Typeface.DEFAULT
+    private val system = AppSettings.useSystemFont.value
+    private val heavy = (if (system) null else font(context, R.font.pretendard_jp_extrabold)) ?: Typeface.DEFAULT_BOLD
+    private val semibold = (if (system) null else font(context, R.font.pretendard_jp_semibold)) ?: Typeface.DEFAULT_BOLD
+    private val regular = (if (system) null else font(context, R.font.pretendard_jp_regular)) ?: Typeface.DEFAULT
 
     fun heading(size: Float, color: Int) = paint(heavy, size, color)
 
