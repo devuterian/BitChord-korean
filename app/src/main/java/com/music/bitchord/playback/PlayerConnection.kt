@@ -1,5 +1,6 @@
 package com.music.bitchord.playback
 
+import com.music.bitchord.R
 import android.content.ComponentName
 import android.net.Uri
 import android.os.Bundle
@@ -302,6 +303,7 @@ fun MediaController.setQueueDragActive(active: Boolean) {
 @Composable
 fun rememberPlayerState(controller: MediaController?): PlayerState {
     val position = remember { PlaybackPosition() }
+    val context = LocalContext.current
     var state by remember { mutableStateOf(PlayerState(position = position)) }
 
     DisposableEffect(controller) {
@@ -401,7 +403,7 @@ fun rememberPlayerState(controller: MediaController?): PlayerState {
                 refreshCurrentQueueItem = events.contains(Player.EVENT_MEDIA_METADATA_CHANGED),
             )
             override fun onPlayerErrorChanged(error: androidx.media3.common.PlaybackException?) {
-                sync(error?.let { "Playback failed: ${it.errorCodeName}" })
+                sync(error?.let { context.getString(R.string.playback_failed, it.errorCodeName) })
             }
         }
         player.addListener(listener)

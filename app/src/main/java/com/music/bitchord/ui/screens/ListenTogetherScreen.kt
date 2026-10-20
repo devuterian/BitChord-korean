@@ -367,7 +367,7 @@ fun ListenTogetherScreen(
                     onMaxMembersChange = { maxMembers = it.coerceIn(2, 10) },
                     busy = busy,
                     enabled = signedIn && ListenTogether.hasServer,
-                    error = failure,
+                    error = ListenTogether.localizedMessage(context, failure),
                     onCreate = {
                         busy = true
                         failure = null
@@ -393,7 +393,7 @@ fun ListenTogetherScreen(
                     },
                     busy = busy,
                     enabled = signedIn && ListenTogether.hasServer,
-                    error = failure,
+                    error = ListenTogether.localizedMessage(context, failure),
                     onSubmit = { openPartyPreview(codeInput, null) },
                 )
 
@@ -406,7 +406,7 @@ fun ListenTogetherScreen(
                         ListenTogether.setNickname(nickname)
                     },
                     busy = busy,
-                    error = failure,
+                    error = ListenTogether.localizedMessage(context, failure),
                     onDismiss = {
                         sheet = null
                         failure = null
@@ -532,7 +532,7 @@ fun ListenTogetherScreen(
         // inside it — printing the same line down here as well means printing
         // it where it cannot be read.
         if (sheet == null) {
-            (failure ?: state.error)?.let { message ->
+            ListenTogether.localizedMessage(context, failure ?: state.error)?.let { message ->
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,

@@ -45,6 +45,15 @@ extra["bitchordVersionCode"] = 28
 extra["bitchordVersionName"] = "1.8.1"
 
 /*
+ * BitChord-korean's own build of the upstream version above. The phone app
+ * ships as "<upstream>.<this>" (1.8.1.1) with version code
+ * upstream * 100 + this (2801), so the fork's releases keep counting up
+ * across upstream merges and the in-app updater compares them numerically.
+ * Reset to 1 when the upstream version changes.
+ */
+extra["bitchordKoreanBuild"] = 1
+
+/*
  * Bump this by hand before cutting each sideloaded test build ("beta2",
  * "beta3", ...) and blank it out before cutting the real release. Marks the
  * versionName above as a pre-release: AppUpdateChecker.isNewer() treats any

@@ -36,6 +36,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.Contrast
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.HighQuality
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Lyrics
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Explicit
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -73,6 +84,7 @@ import androidx.compose.material.icons.rounded.SignalCellularAlt
 import androidx.compose.material.icons.rounded.SmartDisplay
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.SurroundSound
+import androidx.compose.material.icons.rounded.Title
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.WebAssetOff
@@ -135,6 +147,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import com.music.bitchord.ui.components.localizePipelineText
 import com.music.bitchord.ui.components.isGlassSupported
 import com.music.bitchord.ui.components.languageDisplayNameRes
 import com.music.bitchord.ui.components.MessageState
@@ -211,6 +224,7 @@ fun SettingsScreen(
     val spatialAudio by AppSettings.spatialAudio.collectAsStateWithLifecycle()
     val nerdStats by AppSettings.showNerdStats.collectAsStateWithLifecycle()
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val navLabels by AppSettings.showNavLabels.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     val liquidGlass by AppSettings.liquidGlass.collectAsStateWithLifecycle()
     val liquidGlassSupported = isGlassSupported()
@@ -238,10 +252,23 @@ fun SettingsScreen(
     val downloadQuality by AppSettings.downloadQuality.collectAsStateWithLifecycle()
     val wifiOnlyDownloads by AppSettings.wifiOnlyDownloads.collectAsStateWithLifecycle()
     val exportDownloads by AppSettings.exportDownloads.collectAsStateWithLifecycle()
+    val autoDownloadPlaylists by AppSettings.autoDownloadPlaylists.collectAsStateWithLifecycle()
     val stopOnTaskRemoved by AppSettings.stopOnTaskRemoved.collectAsStateWithLifecycle()
     val hideVolumeBar by AppSettings.hideVolumeBar.collectAsStateWithLifecycle()
     val hideStatusBarInPlayer by AppSettings.hideStatusBarInPlayer.collectAsStateWithLifecycle()
     val hideSongStatus by AppSettings.hideSongStatus.collectAsStateWithLifecycle()
+    val useSystemFont by AppSettings.useSystemFont.collectAsStateWithLifecycle()
+    val adaptiveStatusBarIcons by AppSettings.adaptiveStatusBarIcons.collectAsStateWithLifecycle()
+    val hidePlayerHandle by AppSettings.hidePlayerHandle.collectAsStateWithLifecycle()
+    val hideExplicitBadge by AppSettings.hideExplicitBadge.collectAsStateWithLifecycle()
+    val hideLikeButton by AppSettings.hideLikeButton.collectAsStateWithLifecycle()
+    val hideLyricStrip by AppSettings.hideLyricStrip.collectAsStateWithLifecycle()
+    val hideTimeLabels by AppSettings.hideTimeLabels.collectAsStateWithLifecycle()
+    val hideQualityBadge by AppSettings.hideQualityBadge.collectAsStateWithLifecycle()
+    val hideMixingIndicator by AppSettings.hideMixingIndicator.collectAsStateWithLifecycle()
+    val hideListenTogetherButton by AppSettings.hideListenTogetherButton.collectAsStateWithLifecycle()
+    val hideOutputCaption by AppSettings.hideOutputCaption.collectAsStateWithLifecycle()
+    val shortShareLinks by AppSettings.shortShareLinks.collectAsStateWithLifecycle()
     val showQueueHistory by AppSettings.showQueueHistory.collectAsStateWithLifecycle()
     val swipeToPlayNext by AppSettings.swipeToPlayNext.collectAsStateWithLifecycle()
     val dontRepeatSuggestions by AppSettings.dontRepeatSuggestions.collectAsStateWithLifecycle()
@@ -541,6 +568,14 @@ fun SettingsScreen(
                     badge = stringResource(R.string.blocking).takeIf { wifiOnlyDownloads && metered == true },
                 )
             }
+            val autoDownloadTitle = stringResource(R.string.auto_download_playlists)
+            row(autoDownloadTitle, "playlist", "new songs", divided = false) {
+                SettingsSubRow(
+                    title = autoDownloadTitle,
+                    checked = autoDownloadPlaylists,
+                    onCheckedChange = AppSettings::setAutoDownloadPlaylists,
+                )
+            }
             val exportDownloadsTitle = stringResource(R.string.export_compatible_downloads)
             row(exportDownloadsTitle, "music folder", divided = false) {
                 SettingsSubRow(
@@ -573,6 +608,7 @@ fun SettingsScreen(
                 )
             }
             val outputPrecisionTitle = stringResource(R.string.output_precision)
+            val pipelineContext = LocalContext.current
             row(outputPrecisionTitle, "pcm", "bit depth", "sample rate", "dac") {
                 SettingsRow(
                     icon = Icons.Rounded.GraphicEq,
@@ -580,15 +616,15 @@ fun SettingsScreen(
                     subtitle = buildString {
                         append(outputStatus.sink)
                         append(" · ")
-                        append(outputStatus.deviceName)
+                        append(pipelineContext.localizePipelineText(outputStatus.deviceName))
                         (outputStatus.actualSampleRateHz ?: outputStatus.sampleRatesHz.firstOrNull())
                             ?.let { append(" · ${it / 1000.0} kHz") }
                         append(" · ")
-                        append(AudioOutputStatus.encodingLabel(outputStatus))
+                        append(pipelineContext.localizePipelineText(AudioOutputStatus.encodingLabel(outputStatus)))
                     },
                 )
                 SegmentedControl(
-                    options = OutputPcmMode.entries.map(OutputPcmMode::label),
+                    options = OutputPcmMode.entries.map { stringResource(it.labelRes()) },
                     selectedIndex = OutputPcmMode.entries.indexOf(outputPcmMode),
                     onSelect = { AppSettings.setOutputPcmMode(OutputPcmMode.entries[it]) },
                     modifier = Modifier.padding(start = TEXT_INSET, end = ROW_INSET, bottom = 14.dp),
@@ -768,6 +804,16 @@ fun SettingsScreen(
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
+            val appFontTitle = stringResource(R.string.app_font)
+            row(appFontTitle, "font", "typeface", "pretendard") {
+                SettingsRow(icon = Icons.Rounded.TextFields, title = appFontTitle)
+                SegmentedControl(
+                    options = listOf("Pretendard JP", stringResource(R.string.app_font_system)),
+                    selectedIndex = if (useSystemFont) 1 else 0,
+                    onSelect = { AppSettings.setUseSystemFont(it == 1) },
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
             val reduceAnimationTitle = stringResource(R.string.reduce_animation)
             row(reduceAnimationTitle, "motion") {
                 SettingsRow(
@@ -831,6 +877,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setLiquidGlass(!liquidGlass) },
+                )
+            }
+            val navLabelsTitle = stringResource(R.string.show_nav_labels)
+            row(navLabelsTitle, "navigation", "tabs", "bar", "labels", "icons") {
+                SettingsRow(
+                    icon = Icons.Rounded.Title,
+                    title = navLabelsTitle,
+                    subtitle = stringResource(R.string.show_nav_labels_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = navLabels,
+                            onCheckedChange = AppSettings::setShowNavLabels,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setShowNavLabels(!navLabels) },
                 )
             }
             // Left out where the player won't honour it: a window too wide for
@@ -1054,6 +1119,68 @@ fun SettingsScreen(
             }
         }
 
+        SearchableSettingsGroup(
+            search,
+            header = stringResource(R.string.player_screen),
+            footer = stringResource(R.string.player_screen_footer),
+        ) {
+            val adaptiveStatusBarTitle = stringResource(R.string.adaptive_status_bar_icons)
+            row(adaptiveStatusBarTitle, "status bar", "dark", "icons", "cover") {
+                SettingsRow(
+                    icon = Icons.Rounded.Contrast,
+                    title = adaptiveStatusBarTitle,
+                    subtitle = stringResource(R.string.adaptive_status_bar_icons_subtitle),
+                    trailing = {
+                        Switch(
+                            checked = adaptiveStatusBarIcons,
+                            onCheckedChange = AppSettings::setAdaptiveStatusBarIcons,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setAdaptiveStatusBarIcons(!adaptiveStatusBarIcons) },
+                )
+            }
+            // One switch per piece of the main player, on while it is shown.
+            // The stored settings are hides, so a fresh install shows everything.
+            fun playerToggle(
+                title: String,
+                icon: ImageVector,
+                shown: Boolean,
+                setShown: (Boolean) -> Unit,
+                vararg keywords: String,
+            ) = row(title, *keywords, "player") {
+                SettingsRow(
+                    icon = icon,
+                    title = title,
+                    trailing = {
+                        Switch(
+                            checked = shown,
+                            onCheckedChange = setShown,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { setShown(!shown) },
+                )
+            }
+            playerToggle(stringResource(R.string.show_player_handle), Icons.Rounded.DragHandle, !hidePlayerHandle, { AppSettings.setHidePlayerHandle(it.not()) }, "handle", "grabber")
+            playerToggle(stringResource(R.string.show_playing_from), Icons.Rounded.LibraryMusic, !hideSongStatus, { AppSettings.setHideSongStatus(it.not()) }, "playing from", "played by", "caption")
+            playerToggle(stringResource(R.string.show_explicit_badge), Icons.Rounded.Explicit, !hideExplicitBadge, { AppSettings.setHideExplicitBadge(it.not()) }, "explicit", "badge")
+            playerToggle(stringResource(R.string.show_like_button), Icons.Rounded.FavoriteBorder, !hideLikeButton, { AppSettings.setHideLikeButton(it.not()) }, "like", "heart")
+            playerToggle(stringResource(R.string.show_lyric_strip), Icons.Rounded.Lyrics, !hideLyricStrip, { AppSettings.setHideLyricStrip(it.not()) }, "lyrics", "line")
+            playerToggle(stringResource(R.string.show_time_labels), Icons.Rounded.Schedule, !hideTimeLabels, { AppSettings.setHideTimeLabels(it.not()) }, "time", "elapsed", "remaining")
+            playerToggle(stringResource(R.string.show_quality_badge), Icons.Rounded.HighQuality, !hideQualityBadge, { AppSettings.setHideQualityBadge(it.not()) }, "lossless", "hi-res", "quality", "badge")
+            playerToggle(stringResource(R.string.show_mixing_indicator), Icons.Rounded.AutoAwesome, !hideMixingIndicator, { AppSettings.setHideMixingIndicator(it.not()) }, "automix", "mixing")
+            playerToggle(stringResource(R.string.show_volume_bar), Icons.Rounded.VolumeUp, !hideVolumeBar, { AppSettings.setHideVolumeBar(it.not()) }, "volume")
+            playerToggle(stringResource(R.string.show_listen_together_button), Icons.Rounded.Group, !hideListenTogetherButton, { AppSettings.setHideListenTogetherButton(it.not()) }, "listen together", "party")
+            playerToggle(stringResource(R.string.show_output_caption), Icons.Rounded.Headphones, !hideOutputCaption, { AppSettings.setHideOutputCaption(it.not()) }, "output", "device", "bluetooth")
+        }
+
         SearchableSettingsGroup(search, header = stringResource(R.string.performance)) {
             val highPerformanceModeTitle = stringResource(R.string.high_performance_mode)
             row(highPerformanceModeTitle, "frame rate", "refresh rate", "hz", "battery", "smooth") {
@@ -1156,12 +1283,18 @@ fun SettingsScreen(
             }
         }
 
-        val cacheUnlimited = cacheLimitBytes == AppSettings.UNLIMITED_CACHE_LIMIT_BYTES
+        val cacheDisabled = cacheLimitBytes == AppSettings.DISABLED_CACHE_LIMIT_BYTES
+        val cacheUnlimited = !cacheDisabled && cacheLimitBytes == AppSettings.UNLIMITED_CACHE_LIMIT_BYTES
         // The slider's last stop, one step past the largest fixed size, is
         // "Unlimited" — see [AppSettings.setAudioCacheLimitBytes].
-        val cacheLimitMb = if (cacheUnlimited) CACHE_UNLIMITED_STOP_MB else (cacheLimitBytes / (1024 * 1024)).toInt()
+        val cacheLimitMb = if (cacheDisabled) 0 else if (cacheUnlimited) CACHE_UNLIMITED_STOP_MB else (cacheLimitBytes / (1024 * 1024)).toInt()
         val unlimitedLabel = stringResource(R.string.song_cache_unlimited)
-        val cacheLimitLabel = if (cacheUnlimited) unlimitedLabel else formatCacheSize(cacheLimitMb)
+        val disabledLabel = stringResource(R.string.song_cache_disabled)
+        val cacheLimitLabel = when {
+            cacheDisabled -> disabledLabel
+            cacheUnlimited -> unlimitedLabel
+            else -> formatCacheSize(cacheLimitMb)
+        }
         SearchableSettingsGroup(search, header = stringResource(R.string.storage)) {
             val showCacheFolderTitle = stringResource(R.string.show_cache_folder)
             row(showCacheFolderTitle, "cache", "cached songs", "library", "folder") {
@@ -1188,19 +1321,22 @@ fun SettingsScreen(
                     icon = Icons.Rounded.Storage,
                     title = songCacheLimitTitle,
                     subtitle = when {
+                        cacheDisabled -> stringResource(R.string.song_cache_disabled_subtitle)
                         cacheUnlimited -> stringResource(R.string.song_cache_unlimited_subtitle)
                         cacheLimitMb > CACHE_WARNING_MB ->
                             stringResource(R.string.song_cache_large_subtitle, cacheLimitLabel)
                         else -> stringResource(R.string.song_cache_limit_subtitle)
                     },
                     value = cacheLimitLabel,
-                    sliderValue = cacheLimitMb.toFloat(),
-                    onSliderValue = {
-                        AppSettings.setAudioCacheLimitBytes(it.roundToInt().toLong() * 1024 * 1024)
+                    // Snap every slider position to an exact 512 MB step so the label and track always align.
+                    sliderValue = if (cacheLimitMb == 0) CACHE_STEP_MB * 0.1f else cacheLimitMb.toFloat(),
+                    onSliderValue = { raw ->
+                        val snapped = (raw / CACHE_STEP_MB + 0.5f).toInt() * CACHE_STEP_MB
+                        AppSettings.setAudioCacheLimitBytes(snapped.toLong() * 1024 * 1024)
                     },
-                    valueRange = (AppSettings.DEFAULT_CACHE_LIMIT_BYTES / (1024 * 1024)).toFloat()..
-                        CACHE_UNLIMITED_STOP_MB.toFloat(),
-                    steps = 19,
+                    valueRange = 0f..CACHE_UNLIMITED_STOP_MB.toFloat(),
+                    // Number of interior tick marks (21 steps → 22 positions: Disabled … Unlimited).
+                    steps = 21,
                 )
             }
             val clearSongCacheTitle = stringResource(R.string.clear_song_cache)
@@ -1354,25 +1490,6 @@ fun SettingsScreen(
                     onClick = { AppSettings.setStopOnTaskRemoved(!stopOnTaskRemoved) },
                 )
             }
-            val hideVolumeBarTitle = stringResource(R.string.hide_volume_bar)
-            row(hideVolumeBarTitle, "volume", "player") {
-                SettingsRow(
-                    icon = Icons.Rounded.VolumeOff,
-                    title = hideVolumeBarTitle,
-                    subtitle = stringResource(R.string.hide_volume_bar_subtitle),
-                    trailing = {
-                        Switch(
-                            checked = hideVolumeBar,
-                            onCheckedChange = AppSettings::setHideVolumeBar,
-                            colors = SwitchDefaults.colors(
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                checkedBorderColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        )
-                    },
-                    onClick = { AppSettings.setHideVolumeBar(!hideVolumeBar) },
-                )
-            }
             val hideStatusBarTitle = stringResource(R.string.hide_status_bar_in_player)
             row(hideStatusBarTitle, "status bar", "immersive", "fullscreen", "player") {
                 SettingsRow(
@@ -1411,23 +1528,23 @@ fun SettingsScreen(
                     onClick = { AppSettings.setShowQueueHistory(!showQueueHistory) },
                 )
             }
-            val hideSongStatusTitle = stringResource(R.string.hide_song_status)
-            row(hideSongStatusTitle, "player", "playing from", "played by") {
+            val shortShareLinksTitle = stringResource(R.string.short_share_links)
+            row(shortShareLinksTitle, "share", "link", "youtu.be", "copy") {
                 SettingsRow(
-                    icon = Icons.Rounded.VisibilityOff,
-                    title = hideSongStatusTitle,
-                    subtitle = stringResource(R.string.hide_song_status_subtitle),
+                    icon = Icons.Rounded.Link,
+                    title = shortShareLinksTitle,
+                    subtitle = stringResource(R.string.short_share_links_subtitle),
                     trailing = {
                         Switch(
-                            checked = hideSongStatus,
-                            onCheckedChange = AppSettings::setHideSongStatus,
+                            checked = shortShareLinks,
+                            onCheckedChange = AppSettings::setShortShareLinks,
                             colors = SwitchDefaults.colors(
                                 checkedTrackColor = MaterialTheme.colorScheme.primary,
                                 checkedBorderColor = MaterialTheme.colorScheme.primary,
                             ),
                         )
                     },
-                    onClick = { AppSettings.setHideSongStatus(!hideSongStatus) },
+                    onClick = { AppSettings.setShortShareLinks(!shortShareLinks) },
                 )
             }
         }
@@ -1557,6 +1674,8 @@ fun SettingsScreen(
         // The version line is the page's colophon, not a setting: it belongs to
         // the whole list, so it goes when the list is narrowed to a few rows.
         if (searchQuery.isBlank()) {
+        val developerLabel = stringResource(R.string.settings_link_developer)
+        val websiteLabel = stringResource(R.string.settings_link_website)
         Text(
             text = buildAnnotatedString {
                 append("bitchord $version  ")
@@ -1571,7 +1690,7 @@ fun SettingsScreen(
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://github.com/kushagrasinghx", linkStyles)) {
-                    append("Developer")
+                    append(developerLabel)
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://discord.gg/pDdKfrdHY6", linkStyles)) {
@@ -1579,7 +1698,7 @@ fun SettingsScreen(
                 }
                 append("  ")
                 withLink(LinkAnnotation.Url("https://bitchord.kushagrasingh.in/", linkStyles)) {
-                    append("Website")
+                    append(websiteLabel)
                 }
                 append("\n~YouTube Music & Listen Together Backend")
             },
@@ -1892,6 +2011,24 @@ private fun AudioQuality.localizedLabel(): String = stringResource(
     },
 )
 
+private fun AudioQuality.detailRes(): Int = when (this) {
+    AudioQuality.LOW -> R.string.audio_quality_low_detail
+    AudioQuality.MEDIUM -> R.string.audio_quality_medium_detail
+    AudioQuality.HIGH -> R.string.audio_quality_high_detail
+    AudioQuality.LOSSLESS -> R.string.audio_quality_lossless_detail
+}
+
+private fun DownloadQuality.detailRes(): Int = when (this) {
+    DownloadQuality.STANDARD -> R.string.download_quality_standard_detail
+    DownloadQuality.HIGH -> R.string.download_quality_high_detail
+    DownloadQuality.LOSSLESS -> R.string.download_quality_lossless_detail
+}
+
+private fun OutputPcmMode.labelRes(): Int = when (this) {
+    OutputPcmMode.PCM_16 -> R.string.output_pcm_16
+    OutputPcmMode.FLOAT_32 -> R.string.output_pcm_32_float
+}
+
 @Composable
 private fun DownloadQuality.localizedLabel(): String = stringResource(
     when (this) {
@@ -1938,6 +2075,9 @@ internal fun openEqualizer(context: Context, sessionId: Int) {
 
 /** Above this, the cache limit slider's subtitle warns rather than reassures. */
 private const val CACHE_WARNING_MB = 2048
+
+/** Each discrete step on the cache-limit slider: exactly 512 MB. */
+private const val CACHE_STEP_MB = 512
 
 /**
  * Where the cache limit slider's "Unlimited" stop sits: one 512MB step past
@@ -2094,7 +2234,7 @@ private fun QualitySheet(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = stringResource(R.string.quality_hourly, quality.detail, quality.hourly),
+                        text = stringResource(R.string.quality_hourly, stringResource(quality.detailRes()), quality.hourly),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -2253,7 +2393,7 @@ private fun DownloadQualitySheet(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = stringResource(R.string.quality_per_track, quality.detail, quality.perTrack),
+                        text = stringResource(R.string.quality_per_track, stringResource(quality.detailRes()), quality.perTrack),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -2652,14 +2792,20 @@ internal fun SliderRow(
             valueRange = valueRange,
             steps = steps,
             colors = colors,
-            // Bare track: the step ticks and the end-stop dot are noise when the
-            // value is already spelled out on the line above.
+            // Use SliderDefaults.Track so the look is identical by construction (16 dp track,
+            // 8 dp corner radius). The default thumbTrackGapSize (6 dp) + half-thumb-width
+            // creates an endGap of 8 dp; at 512 MB the raw active segment (~14 dp) minus this
+            // gap is ~6 dp which is below the 8 dp corner-radius threshold, so M3 skips drawing.
+            // We reduce thumbTrackGapSize to 0 dp so the gap is only half-thumb-width (2 dp),
+            // making the 512 MB segment ~12 dp > 8 dp and visible. The look at 1 GB+ is
+            // virtually unchanged (gap shrinks from 6→0 dp, a barely perceptible difference).
             track = { state ->
                 SliderDefaults.Track(
                     sliderState = state,
                     colors = colors,
                     drawStopIndicator = null,
                     drawTick = { _, _ -> },
+                    thumbTrackGapSize = 0.dp,
                 )
             },
             modifier = Modifier.padding(start = ICON_SIZE + ICON_GAP),

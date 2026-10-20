@@ -87,6 +87,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.painterResource
@@ -162,16 +163,18 @@ internal fun PlaybackOriginCaption(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    val tint = LocalPlayerTint.current
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall.copy(
             shadow = Shadow(
-                color = Color.Black.copy(alpha = 0.55f),
+                // A dark caption (over a bright cover) is lifted, not sunk.
+                color = if (tint.luminance() < 0.5f) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.55f),
                 offset = Offset(0f, 1f),
                 blurRadius = 4f,
             ),
         ),
-        color = LocalPlayerTint.current,
+        color = tint,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         textAlign = textAlign,
@@ -211,15 +214,17 @@ internal fun PlayerScrubber(
     val reduceAnimation by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
     // One clock for the bar and the "Mixing" label, so they breathe on the same beat.
     val mixPulse = rememberMixPulse({ mixBlend.value }, enabled = !reduceAnimation)
+    val hideTimeLabels by PlayerSettings.hideTimeLabels.collectAsStateWithLifecycle()
+    val hideMixingIndicator by PlayerSettings.hideMixingIndicator.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxWidth()) {
         ThinSlider(
             value = shown,
             onValueChange = onScrub,
             onValueChangeFinished = onScrubFinished,
             loading = loading,
-            mixing = mixing,
+            mixing = mixing && !hideMixingIndicator,
             mixPulse = mixPulse,
-            transitionWindow = transitionWindow,
+            transitionWindow = transitionWindow.takeUnless { hideMixingIndicator },
         )
         Box(
             modifier = Modifier
@@ -228,8 +233,12 @@ internal fun PlayerScrubber(
                 // so pull the labels back up under it.
                 .offset(y = (-9).dp),
         ) {
+            // Hidden in place rather than removed: the row is what gives this
+            // box its height, and the badge centred in it would jump.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { alpha = if (hideTimeLabels) 0f else 1f },
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
@@ -250,12 +259,12 @@ internal fun PlayerScrubber(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .graphicsLayer { alpha = 1f - mixPulse.cover },
+                    .graphicsLayer { alpha = if (hideMixingIndicator) 1f else 1f - mixPulse.cover },
             ) {
                 centerLabel()
             }
             val mixingShown by remember { derivedStateOf { mixPulse.cover > 0f } }
-            if (mixingShown) {
+            if (mixingShown && !hideMixingIndicator) {
                 MixingLabel(mixPulse, Modifier.align(Alignment.Center))
             }
         }
@@ -318,6 +327,7 @@ internal fun PlaybackQualityLabel(
     isLoading: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    if (PlayerSettings.hideQualityBadge.collectAsStateWithLifecycle().value) return
     val wifiQuality by PlayerSettings.audioQualityWifi.collectAsStateWithLifecycle()
     val cellularQuality by PlayerSettings.audioQualityCellular.collectAsStateWithLifecycle()
     val metered by PlayerSettings.meteredConnection.collectAsStateWithLifecycle()
@@ -902,6 +912,7 @@ private fun OutputPartyPill(
             contentDescription = stringResource(Res.string.audio_output),
             onClick = onOutput,
         )
+        if (PlayerSettings.hideListenTogetherButton.collectAsStateWithLifecycle().value) return@Pill
         PillDivider()
         PillSegment(
             // Person rather than Groups: the three-person glyph is drawn half

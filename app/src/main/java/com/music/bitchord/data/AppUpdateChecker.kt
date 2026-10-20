@@ -1,5 +1,6 @@
 package com.music.bitchord.data
 
+import com.music.bitchord.R
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -43,7 +44,7 @@ object AppUpdateChecker {
     private const val CACHE_SUBDIR = "updates"
 
     private const val LATEST_RELEASE_URL =
-        "https://api.github.com/repos/kushagrasinghx/BitChord/releases/latest"
+        "https://api.github.com/repos/devuterian/BitChord-korean/releases/latest"
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -176,7 +177,7 @@ object AppUpdateChecker {
             _download.value = if (downloadCancelled) {
                 DownloadState.Idle
             } else {
-                DownloadState.Failed(error.message ?: "Download failed")
+                DownloadState.Failed(error.message ?: context.getString(R.string.update_download_failed))
             }
         }
     }
