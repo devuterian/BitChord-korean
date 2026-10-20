@@ -91,6 +91,11 @@ enum class LyricsSource(
         detail = "Contributed by listeners, so it has what nobody licensed",
         wordSynced = true,
     ),
+    ALSONG(
+        label = "ALSong",
+        detail = "Korean whole-line LRC from 알송, submitted by listeners",
+        wordSynced = false,
+    ),
     YOUTUBE_TRANSCRIPT(
         label = "YouTube captions",
         detail = "Timed captions matched to the exact playing video",

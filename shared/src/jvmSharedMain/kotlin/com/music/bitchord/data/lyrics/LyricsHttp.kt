@@ -2,7 +2,9 @@ package com.music.bitchord.data.lyrics
 
 import com.music.bitchord.data.Http
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
 /**
@@ -47,6 +49,22 @@ internal fun lyricsGet(url: String): String? = runCatching {
         .header("Accept", "application/json")
         .build()
     client.newCall(request).execute().use { response ->
+        if (response.isSuccessful) response.body?.string() else null
+    }
+}.getOrNull()
+
+/** Body of a successful POST of a raw [body], or null for any failure at all. */
+internal fun lyricsPost(
+    url: String,
+    body: String,
+    contentType: String,
+    headers: Map<String, String> = emptyMap(),
+): String? = runCatching {
+    val builder = Request.Builder().url(url)
+        .header("User-Agent", LYRICS_AGENT)
+        .post(body.toRequestBody(contentType.toMediaType()))
+    headers.forEach { (name, value) -> builder.header(name, value) }
+    client.newCall(builder.build()).execute().use { response ->
         if (response.isSuccessful) response.body?.string() else null
     }
 }.getOrNull()

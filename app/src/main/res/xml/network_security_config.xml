@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cleartext is off everywhere except ALSong's lyric service, which has no HTTPS endpoint. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">lyrics.alsong.co.kr</domain>
+    </domain-config>
+</network-security-config>
