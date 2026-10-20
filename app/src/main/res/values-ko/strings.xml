@@ -313,6 +313,8 @@
     <string name="theme">테마</string>
     <string name="app_font">글꼴</string>
     <string name="app_font_system">시스템</string>
+    <string name="show_korean_charts">국내 차트 표시</string>
+    <string name="show_korean_charts_subtitle">홈에 멜론과 써클차트 선반을 추가합니다. 곡은 YouTube Music에서 찾아 연결합니다</string>
     <string name="reduce_animation">애니메이션 줄이기</string>
     <string name="reduce_animation_subtitle">메인 플레이어의 그라데이션이 움직이지 않고 멈춥니다</string>
     <string name="reduce_dynamic_blur">동적 블러 줄이기</string>

@@ -1644,7 +1644,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // one at the tail.
         _homePendingShelves.value = 1 + YtMusicRepository.HOME_SUPPLEMENT_BROWSE_IDS.size
         viewModelScope.launch {
-            launch {
+            val coreFeed = launch {
                 try {
                     YtMusicRepository.home()
                         .onSuccess { feed ->
@@ -1683,6 +1683,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     } finally {
                         homeShelfRequestSettled(identity, generation)
+                    }
+                }
+            }
+            if (AppSettings.showKoreanCharts.value) {
+                launch {
+                    // Looked up while the core feed loads, but published after it so the
+                    // charts land below YouTube's own shelves rather than above them.
+                    val charts = YtMusicRepository.koreanChartShelves()
+                    coreFeed.join()
+                    if (charts.isNotEmpty() && isCurrentHomeLoad(identity, generation) &&
+                        _home.value is UiState.Success
+                    ) {
+                        publishHomeShelves(charts)
                     }
                 }
             }
