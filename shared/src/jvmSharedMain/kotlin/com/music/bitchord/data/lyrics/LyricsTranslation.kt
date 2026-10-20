@@ -233,11 +233,25 @@ object LyricsTranslation {
         if (slots.isEmpty()) return RomanizationResult.Unavailable
         if (!hasNonLatinLetters(slots)) return RomanizationResult.AlreadyRomanized
 
+        // Hangul lines are romanized on the device (no network). Lines with
+        // kana, Han or other scripts still go to the web endpoint.
+        val local = slots.map(::isLocallyRomanizable)
+        // Latin-only lines (ad-libs, English hooks) pass through unchanged.
+        if (slots.indices.none { !local[it] && hasNonLatinLetters(listOf(slots[it])) }) {
+            return RomanizationResult.Romanized(
+                lines = rebuild(lines, slots, slots.map { HangulRomanizer.romanize(it.text) }),
+                sourceLanguage = "ko",
+                fromCache = false,
+            )
+        }
+
         // Romanization always ends in Latin script. The translation destination
         // is still sent as `tl` because the web endpoint requires it, but it is
         // deliberately excluded from this cache key: changing "translate to"
-        // cannot change how the source language is pronounced.
-        val cacheKey = cacheKey(trackId, "romanize", slots)
+        // cannot change how the source language is pronounced. The "romanize2"
+        // tag keeps older all-remote results (Korean included) from shadowing
+        // the local Hangul output.
+        val cacheKey = cacheKey(trackId, "romanize2", slots)
         val cached = memory.get(cacheKey) ?: readCache(cacheKey)?.also {
             memory.put(cacheKey, it)
         }
@@ -250,7 +264,8 @@ object LyricsTranslation {
         }
 
         val target = targetLanguageTag.trim().ifBlank { "en" }
-        val batches = batches(slots)
+        val remoteSlots = slots.filterIndexed { index, _ -> !local[index] }
+        val batches = batches(remoteSlots)
         val answers = coroutineScope {
             batches.chunked(MAX_PARALLEL_REQUESTS).flatMap { group ->
                 group.map { batch -> async { requestRomanizationBatch(batch, target) } }.awaitAll()
@@ -263,13 +278,17 @@ object LyricsTranslation {
             .maxByOrNull { (_, values) -> values.sumOf { it.sourceWeight } }
             ?.key
             .orEmpty()
-        val romanized = complete.flatMap { it.translations }
-        if (source.isBlank() || romanized.size != slots.size) return RomanizationResult.Unavailable
-        if (unchangedWeight(slots, romanized) == slots.sumOf { it.text.length }) {
+        val remoteRomanized = complete.flatMap { it.translations }
+        if (source.isBlank() || remoteRomanized.size != remoteSlots.size) return RomanizationResult.Unavailable
+        if (unchangedWeight(remoteSlots, remoteRomanized) == remoteSlots.sumOf { it.text.length }) {
             // Non-Latin input reached this point, so an unchanged response is
             // an unsupported/failed romanization rather than an already-Latin
             // lyric. The fast all-Latin check above handles the real no-op case.
             return RomanizationResult.Unavailable
+        }
+        val remoteIterator = remoteRomanized.iterator()
+        val romanized = slots.mapIndexed { index, slot ->
+            if (local[index]) HangulRomanizer.romanize(slot.text) else remoteIterator.next()
         }
 
         val entry = CachedTranslation(
@@ -284,6 +303,17 @@ object LyricsTranslation {
             sourceLanguage = source,
             fromCache = false,
         )
+    }
+
+    /** Hangul mixed only with Latin letters, so no other script needs the web endpoint. */
+    private fun isLocallyRomanizable(slot: TextSlot): Boolean {
+        if (!HangulRomanizer.containsHangul(slot.text)) return false
+        return slot.text.codePoints().noneMatch { codePoint ->
+            Character.isLetter(codePoint) &&
+                Character.UnicodeScript.of(codePoint).let {
+                    it != Character.UnicodeScript.LATIN && it != Character.UnicodeScript.HANGUL
+                }
+        }
     }
 
     private fun flatten(lines: List<LyricLine>): List<TextSlot> = buildList {
