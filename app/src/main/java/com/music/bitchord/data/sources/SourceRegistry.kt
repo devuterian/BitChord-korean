@@ -398,7 +398,7 @@ object SourceRegistry {
                     label = existing?.label.orEmpty(),
                 ),
             )
-            is DetectedFormat.Unsupported -> Result.failure(AddonException(detected.reason))
+            is DetectedFormat.Unsupported -> Result.failure(AddonException(detected.reason, detected.text))
         }
     }
 

@@ -170,6 +170,18 @@ interface PlayerSettingsSource {
     val hideVolumeBar: StateFlow<Boolean>
     /** Hide the device status bar while the player is up. Always false where there is none. */
     val hideStatusBar: StateFlow<Boolean>
+    /** Dark status bar glyphs, handle and caption over a bright full-bleed cover. */
+    val adaptiveStatusBarIcons: StateFlow<Boolean> get() = PlayerSettingOff
+    /** The fork's per-element hides on the main player; see AppSettings for each. */
+    val hidePlayerHandle: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideExplicitBadge: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideLikeButton: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideLyricStrip: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideTimeLabels: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideQualityBadge: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideMixingIndicator: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideListenTogetherButton: StateFlow<Boolean> get() = PlayerSettingOff
+    val hideOutputCaption: StateFlow<Boolean> get() = PlayerSettingOff
     val lastPlayerScreen: StateFlow<LastPlayerScreen>
     val legacyMeshGradient: StateFlow<Boolean>
     val lyricsBlur: StateFlow<Boolean>
@@ -196,6 +208,9 @@ interface PlayerSettingsSource {
     fun setLastPlayerScreen(value: LastPlayerScreen)
     fun setLyricsOffsetMs(value: Int)
 }
+
+/** What a host that has no such setting reports for the fork's player toggles. */
+private val PlayerSettingOff: StateFlow<Boolean> = MutableStateFlow(false)
 
 /** The player's name for the installed host's settings, read where AppSettings used to be. */
 internal val PlayerSettings: PlayerSettingsSource

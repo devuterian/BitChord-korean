@@ -59,6 +59,16 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         override val showQueueHistory get() = AppSettings.showQueueHistory
         override val hideVolumeBar get() = AppSettings.hideVolumeBar
         override val hideStatusBar get() = AppSettings.hideStatusBarInPlayer
+        override val adaptiveStatusBarIcons get() = AppSettings.adaptiveStatusBarIcons
+        override val hidePlayerHandle get() = AppSettings.hidePlayerHandle
+        override val hideExplicitBadge get() = AppSettings.hideExplicitBadge
+        override val hideLikeButton get() = AppSettings.hideLikeButton
+        override val hideLyricStrip get() = AppSettings.hideLyricStrip
+        override val hideTimeLabels get() = AppSettings.hideTimeLabels
+        override val hideQualityBadge get() = AppSettings.hideQualityBadge
+        override val hideMixingIndicator get() = AppSettings.hideMixingIndicator
+        override val hideListenTogetherButton get() = AppSettings.hideListenTogetherButton
+        override val hideOutputCaption get() = AppSettings.hideOutputCaption
         override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
         override val legacyMeshGradient get() = AppSettings.legacyMeshGradient
         override val lyricsBlur get() = AppSettings.lyricsBlur

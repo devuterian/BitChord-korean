@@ -198,14 +198,14 @@ class DownloadService : Service() {
 
         val song = current
         val title = when {
-            runningStates.size > 1 -> "Downloading ${runningStates.size} songs"
-            else -> song?.title ?: "Downloading"
+            runningStates.size > 1 -> resources.getQuantityString(R.plurals.downloading_song_count, runningStates.size, runningStates.size)
+            else -> song?.title ?: getString(R.string.download_notification_title)
         }
         val text = when {
-            runningStates.size > 1 && waiting > 0 -> "$waiting more queued"
+            runningStates.size > 1 && waiting > 0 -> getString(R.string.notif_more_queued, waiting)
             runningStates.size > 1 -> song?.title.orEmpty()
-            song == null -> "Starting"
-            waiting > 0 -> "${song.artist} · $waiting more queued"
+            song == null -> getString(R.string.download_notification_starting)
+            waiting > 0 -> getString(R.string.download_notification_queued, song.artist, waiting)
             else -> song.artist
         }
 
@@ -227,7 +227,7 @@ class DownloadService : Service() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(0, "Cancel", cancel)
+            .addAction(0, getString(R.string.cancel), cancel)
             .build()
     }
 
@@ -236,12 +236,12 @@ class DownloadService : Service() {
         manager.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                "Downloads",
+                getString(R.string.download_channel_name),
                 // Progress, not news. It belongs in the shade without a sound
                 // or a heads-up every time a track finishes.
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Songs being saved to your Music folder"
+                description = getString(R.string.download_channel_description)
                 setShowBadge(false)
             },
         )

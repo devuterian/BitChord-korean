@@ -77,6 +77,9 @@ import com.music.bitchord.data.sources.SourceConfig
 import com.music.bitchord.data.sources.SourceHealth
 import com.music.bitchord.data.sources.SourceKind
 import com.music.bitchord.data.sources.SourceRegistry
+import com.music.bitchord.data.sources.addon.addonText
+import com.music.bitchord.data.sources.detailFor
+import com.music.bitchord.data.sources.reasonFor
 import com.music.bitchord.ui.components.AddonEditorAlert
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.Dispatchers
@@ -152,7 +155,7 @@ fun SourcesScreen(
             val source = SourceRegistry.instance(config.id) ?: return@forEach
             health[config.id] = withContext(Dispatchers.IO) {
                 runCatching { source.health() }
-                    .getOrElse { SourceHealth.Unreachable(it.message ?: "Failed") }
+                    .getOrElse { SourceHealth.Unreachable(it.message ?: context.getString(R.string.failed)) }
             }
             // An addon names itself, so the row takes that name rather than a
             // hostname — and rather than a field asking the user to make one up.
@@ -896,16 +899,16 @@ private fun SourceConfig.statusLine(health: SourceHealth?): String = when {
     !isComplete -> stringResource(R.string.source_setup_required)
     kind == SourceKind.JIOSAAVN -> stringResource(R.string.jiosaavn_mismatch_warning)
     health is SourceHealth.Ok -> listOfNotNull(
-        health.detail,
-        kind.labels.take(3).joinToString(" · "),
+        health.detailFor(LocalContext.current),
+        kind.labels.take(3).map { stringResource(it) }.joinToString(" · "),
         // The addon's own `allowDownloads: 0`, said where the user will look
         // when a download from it came from somewhere else.
         stringResource(R.string.source_downloads_off).takeIf { !allowDownloads },
     ).joinToString(" · ")
-    health is SourceHealth.Rejected -> health.reason
-    health is SourceHealth.Unreachable -> stringResource(R.string.source_unreachable, health.reason)
+    health is SourceHealth.Rejected -> health.reasonFor(LocalContext.current)
+    health is SourceHealth.Unreachable -> stringResource(R.string.source_unreachable, health.reasonFor(LocalContext.current))
     kind.needsServer -> stringResource(R.string.checking)
-    else -> kind.labels.take(3).joinToString(" · ")
+    else -> kind.labels.take(3).map { stringResource(it) }.joinToString(" · ")
 }
 
 /**
@@ -933,6 +936,7 @@ internal fun SourceEditorAlert(
     var status by remember { mutableStateOf<String?>(null) }
     var statusIsGood by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val connected = stringResource(R.string.connected)
     val unreadable = stringResource(R.string.source_unrecognised)
     val alreadyAdded = stringResource(R.string.source_already_added)
@@ -956,7 +960,7 @@ internal fun SourceEditorAlert(
             val found = identified.getOrNull()
             if (found == null) {
                 statusIsGood = false
-                status = identified.exceptionOrNull()?.message ?: unreadable
+                status = identified.exceptionOrNull()?.let { it.addonText()?.resolve(context) ?: it.message } ?: unreadable
                 busy = false
                 return@launch
             }
@@ -981,17 +985,17 @@ internal fun SourceEditorAlert(
             // its server still be refusing every search.
             val health = withContext(Dispatchers.IO) {
                 runCatching { SourceRegistry.probeCandidate(found) }
-                    .getOrElse { SourceHealth.Unreachable(it.message ?: "Failed") }
+                    .getOrElse { SourceHealth.Unreachable(it.message ?: context.getString(R.string.failed)) }
             }
             statusIsGood = health.isOk
             status = when (health) {
                 is SourceHealth.Ok -> listOfNotNull(
                     connected,
-                    found.kind.label,
-                    health.detail,
+                    context.getString(found.kind.labelRes),
+                    health.detailFor(context),
                 ).joinToString(" · ")
-                is SourceHealth.Rejected -> health.reason
-                is SourceHealth.Unreachable -> health.reason
+                is SourceHealth.Rejected -> health.reasonFor(context)
+                is SourceHealth.Unreachable -> health.reasonFor(context)
             }
             busy = false
 

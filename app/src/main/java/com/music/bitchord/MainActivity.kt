@@ -128,6 +128,7 @@ import com.music.bitchord.auth.SpotifyLoginScreen
 import com.music.bitchord.auth.WebSessionMode
 import com.music.bitchord.auth.YtMusicLoginScreen
 import com.music.bitchord.data.AppUpdateChecker
+import com.music.bitchord.data.ShareLinks
 import com.music.bitchord.data.LocalMediaRepository
 import com.music.bitchord.data.listentogether.JamInviteLink
 import com.music.bitchord.data.listentogether.ListenTogether
@@ -1251,6 +1252,15 @@ private fun BitChordApp(
             // that never got this far, where nothing else would release it.
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             c.swapToVersion(target)
+            // The service-side swap conditions its own resume on the player's
+            // playWhenReady at swap time — which this function has already
+            // paused, on purpose, while it resolved the other version. The
+            // failure paths above carry resumeAfterResolution for exactly
+            // this reason; the success path has to carry it too, or every
+            // automatic swap lands the track paused and the listener presses
+            // play by hand. Reported on-device: track switches sitting paused
+            // with a prepared, never-started stream.
+            if (resumeAfterResolution) c.play()
         } finally {
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             switchingAudioVersion = false
@@ -1318,6 +1328,15 @@ private fun BitChordApp(
             // the finally only exists for the paths that never send.
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             c.swapToVersion(target)
+            // The service-side swap conditions its own resume on the player's
+            // playWhenReady at swap time — which this function has already
+            // paused, on purpose, while it resolved the other version. The
+            // failure paths above carry resumeAfterResolution for exactly
+            // this reason; the success path has to carry it too, or every
+            // automatic swap lands the track paused and the listener presses
+            // play by hand. Reported on-device: track switches sitting paused
+            // with a prepared, never-started stream.
+            if (resumeAfterResolution) c.play()
         } finally {
             if (holdUntilAligned) AppSettings.versionAlignmentInProgress.value = false
             switchingAudioVersion = false
@@ -3049,7 +3068,7 @@ private fun BitChordApp(
                             searching = detailSearching && page.browseId == detail?.browseId,
                             onSearchingChange = { detailSearching = it },
                             onArtistClick = { id, name ->
-                                viewModel.openDetail(id, name, "Artist", null, BrowseType.ARTIST)
+                                viewModel.openDetail(id, name, context.getString(R.string.detail_subtitle_artist), null, BrowseType.ARTIST)
                             },
                             onAddSuggested = { song -> viewModel.addSuggestedSong(page.browseId, song) },
                             // Saving is an account action, so it isn't offered to a
@@ -3548,7 +3567,7 @@ private fun BitChordApp(
                 FrostedTopBar(
                     title = when {
                         showSpotify && detail == null -> stringResource(R.string.spotify)
-                        showDiscord -> "Discord"
+                        showDiscord -> stringResource(R.string.discord)
                         showHistory -> stringResource(R.string.history)
                         libraryShowAll != null && detail == null -> libraryShowAll?.title.orEmpty()
                         showAccountScrobbling -> stringResource(R.string.account_scrobbling)
@@ -4223,7 +4242,7 @@ private fun BitChordApp(
             val share: () -> Unit = {
                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.videoId}")
+                    putExtra(Intent.EXTRA_TEXT, ShareLinks.song(song.videoId))
                 }
                 context.startActivity(Intent.createChooser(sendIntent, song.title))
                 songActions = null
@@ -4631,7 +4650,7 @@ private fun BitChordApp(
                             ),
                         )
                         browseId?.let { id ->
-                            viewModel.openDetail(id, pTitle, "${songs.size} songs", songs.firstOrNull()?.thumbnailUrl)
+                            viewModel.openDetail(id, pTitle, context.resources.getQuantityString(R.plurals.song_count_plural, songs.size, songs.size), songs.firstOrNull()?.thumbnailUrl)
                         }
                     }
                 },
@@ -4746,7 +4765,7 @@ private fun BitChordApp(
                     ?.let { id ->
                         {
                             val url = if (target.type == BrowseType.PLAYLIST) {
-                                "https://music.youtube.com/playlist?list=${id.removePrefix("VL")}"
+                                ShareLinks.playlist(id.removePrefix("VL"))
                             } else {
                                 "https://music.youtube.com/browse/$id"
                             }
@@ -5330,7 +5349,7 @@ private fun BitChordApp(
                             )
                         }
                         Text(
-                            "Sign in to Discord",
+                            stringResource(R.string.discord_sign_in_title),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onBackground,
                         )

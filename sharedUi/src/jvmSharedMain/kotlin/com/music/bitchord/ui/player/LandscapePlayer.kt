@@ -57,6 +57,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
@@ -437,7 +438,9 @@ internal fun LandscapeCredits(
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     onOverflowChange = { titleOverflowing = it },
-                    leading = if (song.isExplicit == true) {
+                    leading = if (song.isExplicit == true &&
+                        !PlayerSettings.hideExplicitBadge.collectAsStateWithLifecycle().value
+                    ) {
                         { ExplicitBadge(Color.White) }
                     } else {
                         null
@@ -463,7 +466,9 @@ internal fun LandscapeCredits(
         // Same gate as the portrait player's: no account to like against for a
         // guest, and no YouTube identity to rate a local file or a finished
         // download against either.
-        if (signedIn && song.localUri == null) {
+        if (signedIn && song.localUri == null &&
+            !PlayerSettings.hideLikeButton.collectAsStateWithLifecycle().value
+        ) {
             val liked = likeStatus == LikeStatus.LIKE
             CircleGlyph(
                 icon = if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart,

@@ -1,5 +1,6 @@
 package com.music.bitchord.playback.cast
 
+import com.music.bitchord.R
 import android.content.Context
 import android.util.Log
 import androidx.mediarouter.media.MediaRouteSelector
@@ -54,6 +55,7 @@ object CastController {
     val volume: StateFlow<Float> = _volume.asStateFlow()
 
     private var castContext: CastContext? = null
+    private var appContext: Context? = null
     private var router: MediaRouter? = null
     private var selector: MediaRouteSelector? = null
     private var started = false
@@ -114,6 +116,7 @@ object CastController {
         if (started) return
         started = true
         val app = context.applicationContext
+        appContext = app
         if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(app) != ConnectionResult.SUCCESS) {
             Log.i(TAG, "Play Services unavailable; casting disabled")
             return
@@ -219,7 +222,7 @@ object CastController {
         update {
             it.copy(
                 connecting = false,
-                connectedName = session.castDevice?.friendlyName ?: it.connectedName ?: "Cast",
+                connectedName = session.castDevice?.friendlyName ?: it.connectedName ?: appContext?.getString(R.string.cast_dialog_title) ?: "Cast",
             )
         }
         publishDevices()

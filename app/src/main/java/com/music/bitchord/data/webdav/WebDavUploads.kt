@@ -1,5 +1,6 @@
 package com.music.bitchord.data.webdav
 
+import com.music.bitchord.R
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -127,7 +128,7 @@ object WebDavUploads {
                     }
                 },
                 onFailure = {
-                    set(song.videoId, TrackState.Failed(it.message ?: "Upload failed"))
+                    set(song.videoId, TrackState.Failed(it.message ?: appContext.getString(R.string.upload_failed)))
                     failed++
                 },
             )

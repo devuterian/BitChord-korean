@@ -1,5 +1,6 @@
 package com.music.bitchord.data.sources
 
+import com.music.bitchord.R
 import android.util.Log
 import com.music.bitchord.data.TrackLog
 import com.music.bitchord.data.model.Song
@@ -49,19 +50,32 @@ class ModuleSource(
 
     override suspend fun health(): SourceHealth = withContext(Dispatchers.IO) {
         if (config.baseUrl.isBlank()) {
-            return@withContext SourceHealth.Rejected("A module index URL is required")
+            return@withContext SourceHealth.Rejected(
+                "A module index URL is required",
+                SourceText(R.string.module_url_required),
+            )
         }
         try {
             val modules = manager.fetchIndex(config.baseUrl).getOrThrow()
             when {
                 modules.isEmpty() -> SourceHealth.Rejected(
-                    "The index answered but listed no modules — check the URL"
+                    "The index answered but listed no modules — check the URL",
+                    SourceText(R.string.module_index_empty),
                 )
-                else -> SourceHealth.Ok("${modules.size} module${if (modules.size == 1) "" else "s"}")
+                else -> SourceHealth.Ok(
+                    "${modules.size} module${if (modules.size == 1) "" else "s"}",
+                    SourceText(
+                        if (modules.size == 1) R.string.module_count_one else R.string.module_count_other,
+                        modules.size,
+                    ),
+                )
             }
         } catch (e: Exception) {
             TrackLog.w(TAG, "module index fetch failed for ${config.displayName}: ${e.message}")
-            SourceHealth.Unreachable(e.message ?: "Could not reach the module index")
+            SourceHealth.Unreachable(
+                e.message ?: "Could not reach the module index",
+                if (e.message == null) SourceText(R.string.module_index_unreachable) else null,
+            )
         }
     }
 

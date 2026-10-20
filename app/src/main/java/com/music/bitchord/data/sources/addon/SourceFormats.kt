@@ -1,5 +1,7 @@
 package com.music.bitchord.data.sources.addon
 
+import com.music.bitchord.R
+import com.music.bitchord.data.sources.SourceText
 import com.music.bitchord.data.Http
 import com.music.bitchord.data.TrackLog
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +45,7 @@ sealed interface DetectedFormat {
     data class ModuleIndex(val moduleCount: Int, val url: String) : DetectedFormat
 
     /** Recognised, and not something this app can play. [reason] is shown to the user. */
-    data class Unsupported(val reason: String) : DetectedFormat
+    data class Unsupported(val reason: String, val text: SourceText? = null) : DetectedFormat
 }
 
 object SourceFormats {
@@ -79,7 +81,10 @@ object SourceFormats {
         val url = rawUrl.trim().trimEnd('/')
         if (url.toHttpUrlOrNull() == null) {
             return@withContext Result.success(
-                DetectedFormat.Unsupported("That is not a web address BitChord can open"),
+                DetectedFormat.Unsupported(
+                    "That is not a web address BitChord can open",
+                    SourceText(R.string.source_err_not_web_address),
+                ),
             )
         }
 
@@ -118,7 +123,7 @@ object SourceFormats {
         // Report what was actually found over the transport error from a URL
         // the user never typed.
         firstUnsupported?.let { return@withContext Result.success(it) }
-        Result.failure(lastFailure ?: AddonUnavailable("Nothing answered at that address"))
+        Result.failure(lastFailure ?: AddonUnavailable("Nothing answered at that address", SourceText(R.string.source_err_no_answer)))
     }
 
     /**
@@ -131,11 +136,12 @@ object SourceFormats {
      */
     fun detect(body: String, url: String = ""): DetectedFormat {
         val root = runCatching { json.parseToJsonElement(body) }.getOrNull()
-            ?: return DetectedFormat.Unsupported("That address did not return JSON")
+            ?: return DetectedFormat.Unsupported("That address did not return JSON", SourceText(R.string.source_err_not_json))
 
         val obj = root as? JsonObject
             ?: return DetectedFormat.Unsupported(
                 "That JSON is a list, and every format BitChord reads is an object",
+                SourceText(R.string.source_err_json_list),
             )
 
         // 1. A module index: JS plugins filed under "category:*" keys. First
@@ -145,7 +151,7 @@ object SourceFormats {
                 com.music.bitchord.data.sources.module.ModuleIndex.parseModules(json, body)
             }.getOrDefault(emptyList())
             return if (modules.isEmpty()) {
-                DetectedFormat.Unsupported("That module index listed no modules")
+                DetectedFormat.Unsupported("That module index listed no modules", SourceText(R.string.source_err_no_modules))
             } else {
                 DetectedFormat.ModuleIndex(modules.size, url)
             }
@@ -160,7 +166,10 @@ object SourceFormats {
         if (looksLikeManifest) {
             val manifest = runCatching { json.decodeFromJsonElement(AddonManifest.serializer(), obj) }
                 .getOrNull()
-                ?: return DetectedFormat.Unsupported("That looks like an addon manifest, but it could not be read")
+                ?: return DetectedFormat.Unsupported(
+                    "That looks like an addon manifest, but it could not be read",
+                    SourceText(R.string.source_err_manifest_unreadable),
+                )
 
             // The one thing genuinely required. Everything this app does with
             // an addon starts by asking it for a track by name, so an addon
@@ -172,6 +181,7 @@ object SourceFormats {
                 val declared = manifest.resources.joinToString(", ")
                 return DetectedFormat.Unsupported(
                     "This addon declares $declared — BitChord needs search",
+                    SourceText(R.string.addon_err_needs_search, declared),
                 )
             }
             return DetectedFormat.Addon(manifest, AddonClient.normalizeBase(url))
@@ -186,11 +196,15 @@ object SourceFormats {
         if (listKey != null) {
             return DetectedFormat.Unsupported(
                 "That JSON lists \"$listKey\", which is not a format BitChord reads",
+                SourceText(R.string.source_err_unknown_list_key, listKey),
             )
         }
 
         val keys = obj.keys.take(4).joinToString(", ").ifBlank { "nothing" }
-        return DetectedFormat.Unsupported("Unrecognised JSON — it holds $keys")
+        return DetectedFormat.Unsupported(
+            "Unrecognised JSON — it holds $keys",
+            SourceText(R.string.source_err_unrecognised_json, keys),
+        )
     }
 
     /**
@@ -218,7 +232,7 @@ object SourceFormats {
                 throw AddonException("HTTP ${response.code}")
             }
             response.body?.string()?.takeIf { it.isNotBlank() }
-                ?: throw AddonException("Empty response")
+                ?: throw AddonException("Empty response", SourceText(R.string.addon_err_empty))
         }
     }.onFailure {
         TrackLog.d(TAG, "identify(${AddonClient.redact(url)}) failed: ${it.message}")

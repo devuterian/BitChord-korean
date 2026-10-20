@@ -1,5 +1,6 @@
 package com.music.bitchord.playback
 
+import com.music.bitchord.R
 import android.content.Context
 import android.media.MediaDataSource
 import android.net.Uri
@@ -70,6 +71,12 @@ import kotlin.coroutines.coroutineContext
 object AudioCache {
 
     private const val TAG = "BitChord"
+
+    /**
+     * True when caching is fully disabled (cache limit set to 0).
+     */
+    val isCacheDisabled: Boolean
+        get() = AppSettings.audioCacheLimitBytes.value == AppSettings.DISABLED_CACHE_LIMIT_BYTES
 
     /**
      * The disk budget, straight from [AppSettings] — 512MB by default, roughly
@@ -192,6 +199,7 @@ object AudioCache {
     const val QUEUE_DEPTH = QUEUE_LOOKAHEAD + 1
 
     private lateinit var cache: SimpleCache
+    private var appContext: Context? = null
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -202,6 +210,7 @@ object AudioCache {
      * dropping the spans that named them.
      */
     fun init(context: Context) {
+        appContext = context.applicationContext
         evictor.maxBytes = AppSettings.audioCacheLimitBytes.value
         cache = SimpleCache(
             File(context.cacheDir, "audio"),
@@ -764,7 +773,7 @@ object AudioCache {
         get() = when (this) {
             Origin.YOUTUBE -> SourceKind.YOUTUBE.label
             Origin.JIOSAAVN -> SourceKind.JIOSAAVN.label
-            Origin.OTHER -> "Addon"
+            Origin.OTHER -> appContext?.getString(R.string.source_kind_addon) ?: "Addon"
         }
 
     private fun formatBytes(bytes: Long): String {
@@ -905,6 +914,8 @@ object AudioCache {
         android.util.Log.d("BCFetchDebug", "prefetchQueue: head ${pendingQueue.firstOrNull()} -> ${mediaIds.firstOrNull()}")
         pendingQueue = mediaIds
         job?.cancel()
+        // When caching is fully disabled, skip all read-ahead work.
+        if (isCacheDisabled) return
         // Both halves of the read-ahead below go through [StreamResolver],
         // which speaks YouTube ids and nothing else. A source-backed track
         // handed to it resolves to a failure, so filtering here saves a dead
