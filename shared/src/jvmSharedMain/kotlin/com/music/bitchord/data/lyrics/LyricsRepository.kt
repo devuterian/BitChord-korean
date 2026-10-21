@@ -211,7 +211,8 @@ object LyricsRepository {
             LyricsSource.PAXSENIX_SPOTIFY -> PaxSenix.spotifyLyrics(title, artist, durationMs)
             LyricsSource.PAXSENIX_MUSIXMATCH -> PaxSenix.musixmatchLyrics(title, artist, durationMs)
             LyricsSource.KUGOU -> KuGou.lyrics(title, artist, durationMs, album)
-            LyricsSource.ALSONG -> ALSong.lyrics(title, artist, durationMs)
+            LyricsSource.ALSONG ->
+                if (ALSong.hasHangul(title) || ALSong.hasHangul(artist)) ALSong.lyrics(title, artist, durationMs) else null
             LyricsSource.MEGALOBIZ -> Megalobiz.lyrics(title, artist)
             LyricsSource.GENIUS -> Genius.lyrics(title, artist)
         }

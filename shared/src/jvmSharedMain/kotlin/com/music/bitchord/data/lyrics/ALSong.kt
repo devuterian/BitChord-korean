@@ -25,6 +25,11 @@ object ALSong {
     /** Fewer stamped lines than this is a stub, not a timed transcript. */
     private const val MIN_TIMED_LINES = 5
 
+    /** Hangul syllables, Jamo and compatibility Jamo: ALSong is a Korean catalogue, so anything else is a wasted (cleartext) query. */
+    fun hasHangul(text: String): Boolean = text.any {
+        it in '\uAC00'..'\uD7A3' || it in '\u1100'..'\u11FF' || it in '\u3130'..'\u318F'
+    }
+
     suspend fun lyrics(title: String, artist: String, durationMs: Long): List<LyricLine>? =
         withContext(Dispatchers.IO) {
             val cleanTitle = title.replace(PARENTHETICAL, "").trim().ifBlank { title }
@@ -88,7 +93,7 @@ object ALSong {
     private fun decode(text: String): String = text
         .replace(NUMERIC_ENTITY) { m ->
             val code = m.groupValues[2].toIntOrNull(if (m.groupValues[1].isEmpty()) 10 else 16)
-            code?.let { String(Character.toChars(it)) } ?: m.value
+            code?.takeIf { Character.isValidCodePoint(it) }?.let { String(Character.toChars(it)) } ?: m.value
         }
         .replace("&lt;", "<").replace("&gt;", ">")
         .replace("&quot;", "\"").replace("&apos;", "'").replace("&amp;", "&")

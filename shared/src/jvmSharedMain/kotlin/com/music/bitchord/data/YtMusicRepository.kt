@@ -95,15 +95,28 @@ object YtMusicRepository {
         ).awaitAll().filterNotNull()
     }
 
+    /** When each chart's fetch last failed, so Home refreshes don't keep hitting a dead endpoint. */
+    private val chartFailedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
     private suspend fun koreanChartShelf(
         name: String,
         title: String,
         fetch: suspend () -> List<KoreanCharts.Entry>,
     ): HomeShelf? {
         KoreanCharts.readCached(name, title)?.let { return it }
+        // Whatever is on disk, however old, beats an empty slot when the fresh one can't be had.
+        fun stale() = KoreanCharts.readCached(name, title, maxAgeMs = KoreanCharts.STALE_MAX_MS)
+        val failedAt = chartFailedAt[name]
+        if (failedAt != null && System.currentTimeMillis() - failedAt in 0..KoreanCharts.FAILURE_BACKOFF_MS) {
+            return stale()
+        }
         return try {
             val entries = fetch().take(KoreanCharts.RESOLVE_COUNT)
-            if (entries.isEmpty()) return null
+            if (entries.isEmpty()) {
+                chartFailedAt[name] = System.currentTimeMillis()
+                return stale()
+            }
+            chartFailedAt.remove(name)
             val gate = Semaphore(CHART_LOOKUP_CONCURRENCY)
             val songs = coroutineScope {
                 entries.map { entry ->
@@ -113,13 +126,17 @@ object YtMusicRepository {
             val items = songs.filterNotNull()
                 .distinctBy { it.videoId }
                 .map { ShelfItem(it.title, it.artist, it.thumbnailUrl, it.videoId, null) }
-            if (items.isEmpty()) return null
+            // Fewer than half resolved: a flaky search run, not a chart worth keeping for six hours.
+            if (items.size * 2 < entries.size) {
+                return stale() ?: items.takeIf { it.isNotEmpty() }?.let { HomeShelf(title = title, items = it) }
+            }
             HomeShelf(title = title, items = items).also { KoreanCharts.writeCached(name, it) }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
             Log.w(TAG, "chart $name failed: ${failure.message}")
-            null
+            chartFailedAt[name] = System.currentTimeMillis()
+            stale()
         }
     }
 
@@ -1038,10 +1055,26 @@ object YtMusicRepository {
      * sent as moves relative to neighbours (see [playlistMoves]) and a list
      * that stops short of the end — the open page while it is still filling
      * in — would send the last row it has "to the end" past rows it never saw.
+     * Fails when an entry comes back without the set-video-id a move has to
+     * name, when a continuation page fails, or when the playlist runs past
+     * [MAX_PAGES]: a partial list must never reach [playlistMoves]. Duplicates
+     * of the same track stay, keyed by their own set-video-id.
      */
     suspend fun playlistEntries(browseId: String): Result<List<Song>> = call("entries:$browseId") {
-        // keyOf returning null drops rows without a setVideoId (suggestion rows)
-        fetchSongsPaged(browseId) { it.setVideoId }
+        val out = LinkedHashMap<String, Song>()
+        var response = Innertube.browse(browseId)
+        var page = 1
+        while (true) {
+            val shelf = InnertubeParser.parsePlaylistShelf(response) ?: break
+            shelf.songs.forEach { song ->
+                val setVideoId = song.setVideoId ?: error("playlist entry without an id")
+                out.putIfAbsent(setVideoId, song)
+            }
+            val token = shelf.continuation ?: break
+            if (page++ >= MAX_PAGES) error("playlist too long to reorder")
+            response = Innertube.browseContinuation(token)
+        }
+        out.values.toList()
     }
 
     /**

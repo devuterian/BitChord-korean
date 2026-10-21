@@ -44,6 +44,12 @@ object KoreanCharts {
     /** A resolved shelf is reused for this long before the charts are fetched again. */
     const val CACHE_TTL_MS = 6L * 60 * 60 * 1000
 
+    /** A shelf older than [CACHE_TTL_MS] is still better than none when a fresh fetch fails; this is how old it may be. */
+    const val STALE_MAX_MS = 3L * 24 * 60 * 60 * 1000
+
+    /** How long a failed chart fetch is remembered before the chart is tried again. */
+    const val FAILURE_BACKOFF_MS = 30L * 60 * 1000
+
     /** A match whose length differs from the chart's by more than this is a different recording. */
     const val DURATION_TOLERANCE_SECONDS = 15
 
@@ -125,14 +131,27 @@ object KoreanCharts {
     }
 
     /**
+     * The (ISO year, week) pairs to try, newest first. Early in January the
+     * count runs back into the previous ISO year, which has 52 or 53 weeks.
+     */
+    fun circleWeeks(today: LocalDate): List<Pair<Int, Int>> {
+        val year = today.get(IsoFields.WEEK_BASED_YEAR)
+        val week = today.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+        // 28 December always falls in the last ISO week of its year.
+        val previousLastWeek = LocalDate.of(year - 1, 12, 28).get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
+        return (1..CIRCLE_WEEKS_TRIED).map { back ->
+            val target = week - back
+            if (target >= 1) year to target else (year - 1) to (previousLastWeek + target)
+        }
+    }
+
+    /**
      * Circle publishes a week or two behind the calendar, and its week numbers
      * don't line up with ours by a fixed offset, so start at last week and
      * step back until one answers with a chart.
      */
     suspend fun fetchCircle(today: LocalDate = LocalDate.now()): List<Entry> = withContext(Dispatchers.IO) {
-        val year = today.get(IsoFields.WEEK_BASED_YEAR)
-        val week = today.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)
-        for (target in (week - 1) downTo maxOf(1, week - CIRCLE_WEEKS_TRIED)) {
+        for ((year, target) in circleWeeks(today)) {
             val body = runCatching {
                 val form = FormBody.Builder()
                     .add("nationGbn", "T")
@@ -170,12 +189,17 @@ object KoreanCharts {
     @Serializable
     private data class CachedShelf(val version: Int = CACHE_VERSION, val savedAt: Long, val items: List<CachedItem>)
 
-    /** The shelf saved under [name] if it is younger than [CACHE_TTL_MS]. */
-    fun readCached(name: String, title: String, now: Long = System.currentTimeMillis()): HomeShelf? {
+    /** The shelf saved under [name] if it is younger than [maxAgeMs]. */
+    fun readCached(
+        name: String,
+        title: String,
+        now: Long = System.currentTimeMillis(),
+        maxAgeMs: Long = CACHE_TTL_MS,
+    ): HomeShelf? {
         val file = cacheFile(name) ?: return null
         return runCatching {
             val cached = json.decodeFromString<CachedShelf>(file.readText())
-            if (cached.version != CACHE_VERSION || now - cached.savedAt !in 0..CACHE_TTL_MS) return@runCatching null
+            if (cached.version != CACHE_VERSION || now - cached.savedAt !in 0..maxAgeMs) return@runCatching null
             HomeShelf(
                 title = title,
                 items = cached.items.map { ShelfItem(it.title, it.subtitle, it.thumbnailUrl, it.videoId, null) },

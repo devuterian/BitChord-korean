@@ -287,6 +287,9 @@ private const val SUBVIEW_STATUS_SCRIM_MIN_ALPHA = 0.40f
  */
 private const val BRIGHT_COVER_LUMINANCE = 0.42f
 
+/** How far open the sheet has to be before the bright-cover treatment applies. */
+private const val SHEET_OPEN_FOR_DARK_ICONS = 0.98f
+
 /** The handle and caption over a bright cover, matching the dark status bar glyphs. */
 private val DARK_TOP_CHROME = Color.Black.copy(alpha = 0.78f)
 
@@ -1743,7 +1746,12 @@ fun NowPlayingScreen(
     // the still cover itself is what sits under the status bar: a clip, a
     // subview's mesh or the landscape layout keep the light treatment.
     val adaptiveStatusBarIcons by PlayerSettings.adaptiveStatusBarIcons.collectAsStateWithLifecycle()
-    val brightCoverUnderStatusBar = adaptiveStatusBarIcons && heroMode && !landscape &&
+    // Only while the sheet is all the way up: dragged down, the page under it
+    // owns the status bar again. Derived so a drag recomposes on the flip, not every frame.
+    val sheetFullyOpen by remember(dock) {
+        derivedStateOf { dock == null || dock.openFraction() >= SHEET_OPEN_FOR_DARK_ICONS }
+    }
+    val brightCoverUnderStatusBar = adaptiveStatusBarIcons && sheetFullyOpen && heroMode && !landscape &&
         heroClip == null && !spotifyCanvasPresentation &&
         !(lyricsOpen || queueOpen || lyricsOffsetOpen || showAudioPipeline || showCast ||
             showAudioOutput || showLyricsProviders || lyricsShare != null) &&

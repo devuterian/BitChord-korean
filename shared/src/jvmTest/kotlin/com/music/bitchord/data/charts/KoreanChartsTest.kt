@@ -56,4 +56,22 @@ class KoreanChartsTest {
         assertTrue(KoreanCharts.durationAcceptable(null, 500))
         assertTrue(KoreanCharts.durationAcceptable(208, 0))
     }
+
+    @Test
+    fun circleWeeksWrapIntoPreviousIsoYear() {
+        // 2026-01-07 is ISO week 2 of 2026; 2025 has 52 weeks.
+        assertEquals(
+            listOf(2026 to 1, 2025 to 52, 2025 to 51, 2025 to 50),
+            KoreanCharts.circleWeeks(java.time.LocalDate.of(2026, 1, 7)),
+        )
+        // 2021-01-06 is ISO week 1 of 2021; 2020 has 53 weeks.
+        assertEquals(
+            listOf(2020 to 53, 2020 to 52, 2020 to 51, 2020 to 50),
+            KoreanCharts.circleWeeks(java.time.LocalDate.of(2021, 1, 6)),
+        )
+        assertEquals(
+            listOf(2026 to 9, 2026 to 8, 2026 to 7, 2026 to 6),
+            KoreanCharts.circleWeeks(java.time.LocalDate.of(2026, 3, 4)),
+        )
+    }
 }

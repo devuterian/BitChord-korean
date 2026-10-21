@@ -263,6 +263,27 @@ object LyricsTranslation {
             )
         }
 
+        // The web endpoint failed or gave nothing usable: keep the Hangul lines
+        // romanized on the device and leave the others as they were (the panel
+        // hides a line identical to its source). Not cached, so a later try can
+        // still fill in the rest.
+        fun hangulOnly(): RomanizationResult =
+            if (local.none { it }) {
+                RomanizationResult.Unavailable
+            } else {
+                RomanizationResult.Romanized(
+                    lines = rebuild(
+                        lines,
+                        slots,
+                        slots.mapIndexed { index, slot ->
+                            if (local[index]) HangulRomanizer.romanize(slot.text) else slot.text
+                        },
+                    ),
+                    sourceLanguage = "ko",
+                    fromCache = false,
+                )
+            }
+
         val target = targetLanguageTag.trim().ifBlank { "en" }
         val remoteSlots = slots.filterIndexed { index, _ -> !local[index] }
         val batches = batches(remoteSlots)
@@ -271,7 +292,7 @@ object LyricsTranslation {
                 group.map { batch -> async { requestRomanizationBatch(batch, target) } }.awaitAll()
             }
         }
-        if (answers.any { it == null }) return RomanizationResult.Unavailable
+        if (answers.any { it == null }) return hangulOnly()
         val complete = answers.filterNotNull()
         val source = complete
             .groupBy { canonicalLanguage(it.sourceLanguage) }
@@ -279,12 +300,12 @@ object LyricsTranslation {
             ?.key
             .orEmpty()
         val remoteRomanized = complete.flatMap { it.translations }
-        if (source.isBlank() || remoteRomanized.size != remoteSlots.size) return RomanizationResult.Unavailable
+        if (source.isBlank() || remoteRomanized.size != remoteSlots.size) return hangulOnly()
         if (unchangedWeight(remoteSlots, remoteRomanized) == remoteSlots.sumOf { it.text.length }) {
             // Non-Latin input reached this point, so an unchanged response is
             // an unsupported/failed romanization rather than an already-Latin
             // lyric. The fast all-Latin check above handles the real no-op case.
-            return RomanizationResult.Unavailable
+            return hangulOnly()
         }
         val remoteIterator = remoteRomanized.iterator()
         val romanized = slots.mapIndexed { index, slot ->

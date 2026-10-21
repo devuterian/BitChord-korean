@@ -35,13 +35,16 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.music.bitchord"
+        // Must match the phone's package: the Data Layer only pairs apps
+        // with the same package name and signature.
+        applicationId = "com.marierie.bitchordkorean"
         // Wear OS 3, the oldest a Galaxy Watch 4 ever shipped with.
         minSdk = 30
         targetSdk = 36
         // The phone's version — see the root build.gradle.kts.
-        versionCode = rootProject.extra["bitchordVersionCode"] as Int
-        versionName = rootProject.extra["bitchordVersionName"] as String
+        val koreanBuild = rootProject.extra["bitchordKoreanBuild"] as Int
+        versionCode = (rootProject.extra["bitchordVersionCode"] as Int) * 100 + koreanBuild
+        versionName = "${rootProject.extra["bitchordVersionName"] as String}.$koreanBuild"
     }
 
     sourceSets {
@@ -53,12 +56,12 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationId = "com.dev.bitchord"
-            resValue("string", "app_name", "BitChord Dev")
+            applicationId = "com.marierie.bitchordkorean.dev"
+            resValue("string", "app_name", "BitChord KR Dev")
         }
         create("prod") {
             dimension = "env"
-            resValue("string", "app_name", "BitChord")
+            resValue("string", "app_name", "BitChord KR")
         }
     }
 

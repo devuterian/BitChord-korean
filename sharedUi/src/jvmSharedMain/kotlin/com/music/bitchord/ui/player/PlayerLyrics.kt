@@ -64,6 +64,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -2389,7 +2390,7 @@ internal fun LyricsPanel(
                     )
                     // A line the service handed back unchanged ("falling
                     // down" in a Korean song) gets no second copy of itself.
-                    subVoices.forEach { voice ->
+                    subVoices.forEachIndexed { kind, voice -> key(kind) {
                     voice.line?.takeIf { it.text.differsFrom(line.text) }?.let { subLine ->
                         PanelVoice(
                             line = subLine,
@@ -2420,7 +2421,7 @@ internal fun LyricsPanel(
                                 .graphicsLayer { alpha = SUB_LYRIC_ALPHA },
                         )
                     }
-                    }
+                    } }
                     line.background?.let { backing ->
                         Column(
                             Modifier
@@ -2455,7 +2456,7 @@ internal fun LyricsPanel(
                                     .padding(start = GLOW_ROOM, end = GLOW_ROOM, bottom = GLOW_ROOM)
                                     .graphicsLayer { alpha = BACKING_ALPHA },
                             )
-                            subVoices.forEach { voice ->
+                            subVoices.forEachIndexed { kind, voice -> key(kind) {
                             voice.line?.background
                                 ?.takeIf { it.text.differsFrom(backing.text) }
                                 ?.let { subBacking ->
@@ -2483,7 +2484,7 @@ internal fun LyricsPanel(
                                             .graphicsLayer { alpha = BACKING_ALPHA * SUB_LYRIC_ALPHA },
                                     )
                                 }
-                            }
+                            } }
                         }
                     }
                 }

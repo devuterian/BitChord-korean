@@ -1631,9 +1631,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (_detailStack.value.isNotEmpty()) _detailStack.value = emptyList()
     }
 
+    private var homeChartsJob: Job? = null
+
     fun loadHome() {
         val identity = listenerKey()
         val generation = homeLoadGeneration.incrementAndGet()
+        // A chart lookup from the previous load must not keep running its searches.
+        homeChartsJob?.cancel()
+        homeChartsJob = null
         _home.value = UiState.Loading
         homeContinuation = null
         homeSeenTitles.clear()
@@ -1687,15 +1692,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             if (AppSettings.showKoreanCharts.value) {
-                launch {
+                homeChartsJob = launch {
                     // Looked up while the core feed loads, but published after it so the
                     // charts land below YouTube's own shelves rather than above them.
-                    val charts = YtMusicRepository.koreanChartShelves()
+                    val charts = async { YtMusicRepository.koreanChartShelves() }
+                    // No point spending 60 searches on a Home that failed to load.
+                    coreFeed.invokeOnCompletion {
+                        if (_home.value !is UiState.Success || !isCurrentHomeLoad(identity, generation)) charts.cancel()
+                    }
                     coreFeed.join()
-                    if (charts.isNotEmpty() && isCurrentHomeLoad(identity, generation) &&
+                    val shelves = runCatching { charts.await() }.getOrNull().orEmpty()
+                    if (shelves.isNotEmpty() && isCurrentHomeLoad(identity, generation) &&
                         _home.value is UiState.Success
                     ) {
-                        publishHomeShelves(charts)
+                        publishHomeShelves(shelves)
                     }
                 }
             }
