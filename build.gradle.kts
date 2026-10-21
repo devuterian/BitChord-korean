@@ -51,7 +51,7 @@ extra["bitchordVersionName"] = "1.8.1"
  * across upstream merges and the in-app updater compares them numerically.
  * Reset to 1 when the upstream version changes.
  */
-extra["bitchordKoreanBuild"] = 1
+extra["bitchordKoreanBuild"] = 2
 
 /*
  * Bump this by hand before cutting each sideloaded test build ("beta2",
