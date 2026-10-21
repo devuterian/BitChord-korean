@@ -211,4 +211,6 @@
     <string name="sign_in_with_google">Sign in with Google</string>
     <string name="songs">Songs</string>
     <string name="top_result">Top result</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_videos">Videos</string>
 </resources>

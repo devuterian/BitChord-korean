@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -76,26 +77,32 @@ private val BaseTypography = Typography(
     labelSmall = TextStyle(fontWeight = FontWeight.W600, fontSize = 11.sp),
 )
 
+private val KoreanLineBreak = LineBreak.Simple.copy(wordBreak = LineBreak.WordBreak.Phrase)
+
 private val PretendardTypography = BaseTypography.withFamily(PretendardJP)
 private val SystemTypography = BaseTypography.withFamily(FontFamily.Default)
 
-/** Applies [family] to every style in the scale, so nothing is left on Roboto. */
+/**
+ * Applies [family] to every style in the scale, so nothing is left on Roboto,
+ * and wraps Korean between words rather than mid-word. Phrase breaking keeps
+ * the cheap simple strategy; it takes effect from Android 13.
+ */
 private fun Typography.withFamily(family: FontFamily) = Typography(
-    displayLarge = displayLarge.copy(fontFamily = family),
-    displayMedium = displayMedium.copy(fontFamily = family),
-    displaySmall = displaySmall.copy(fontFamily = family),
-    headlineLarge = headlineLarge.copy(fontFamily = family),
-    headlineMedium = headlineMedium.copy(fontFamily = family),
-    headlineSmall = headlineSmall.copy(fontFamily = family),
-    titleLarge = titleLarge.copy(fontFamily = family),
-    titleMedium = titleMedium.copy(fontFamily = family),
-    titleSmall = titleSmall.copy(fontFamily = family),
-    bodyLarge = bodyLarge.copy(fontFamily = family),
-    bodyMedium = bodyMedium.copy(fontFamily = family),
-    bodySmall = bodySmall.copy(fontFamily = family),
-    labelLarge = labelLarge.copy(fontFamily = family),
-    labelMedium = labelMedium.copy(fontFamily = family),
-    labelSmall = labelSmall.copy(fontFamily = family),
+    displayLarge = displayLarge.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    displayMedium = displayMedium.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    displaySmall = displaySmall.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    headlineLarge = headlineLarge.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    headlineMedium = headlineMedium.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    headlineSmall = headlineSmall.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    titleLarge = titleLarge.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    titleMedium = titleMedium.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    titleSmall = titleSmall.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    bodyLarge = bodyLarge.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    bodyMedium = bodyMedium.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    bodySmall = bodySmall.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    labelLarge = labelLarge.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    labelMedium = labelMedium.copy(fontFamily = family, lineBreak = KoreanLineBreak),
+    labelSmall = labelSmall.copy(fontFamily = family, lineBreak = KoreanLineBreak),
 )
 
 @Composable

@@ -211,4 +211,6 @@
     <string name="sign_in_with_google">Google로 로그인</string>
     <string name="songs">곡</string>
     <string name="top_result">상위 검색결과</string>
+    <string name="search_filter_all">전체</string>
+    <string name="search_filter_videos">동영상</string>
 </resources>

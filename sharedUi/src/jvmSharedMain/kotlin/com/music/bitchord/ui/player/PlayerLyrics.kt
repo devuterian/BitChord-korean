@@ -111,6 +111,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -2492,6 +2493,8 @@ internal fun LyricsPanel(
     }
 }
 
+private val LyricLineBreak = LineBreak.Simple.copy(wordBreak = LineBreak.WordBreak.Phrase)
+
 /**
  * One voice of a row in [LyricsPanel] — the lead, or the answering line drawn
  * under it.
@@ -2527,6 +2530,8 @@ private fun PanelVoice(
     rise: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    // Korean wraps between words, not mid-word ("떠올/려"), where the platform supports it.
+    val style = style.copy(lineBreak = LyricLineBreak)
     // The line being sung is white; every other one — sung or still to come —
     // takes the sleeve's tint, as the rest of the player's secondary text does
     // (see [LocalPlayerTint]). Faded across the handover rather than cut, so a
