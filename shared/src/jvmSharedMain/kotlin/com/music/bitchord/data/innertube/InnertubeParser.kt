@@ -479,11 +479,16 @@ object InnertubeParser {
         val out = LinkedHashMap<String, Song>()
         // A release's own rows are credited by its header, not one by one.
         val pageCredit = pageCredit(root)
+        val showAuthor by lazy { showAuthor(root) }
         fun walk(node: JsonElement) {
             when (node) {
                 is JsonObject -> {
                     node["musicResponsiveListItemRenderer"]?.let { renderer ->
                         parseResponsiveListItem(renderer as? JsonObject, pageCredit)
+                            ?.let { out[it.videoId] = it }
+                    }
+                    node["musicMultiRowListItemRenderer"]?.let { renderer ->
+                        parseEpisodeItem(renderer as? JsonObject, showAuthor)
                             ?.let { out[it.videoId] = it }
                     }
                     node.values.forEach(::walk)
@@ -701,6 +706,45 @@ object InnertubeParser {
             isExplicit = renderer.hasExplicitBadge(),
         )
     }
+
+    /**
+     * One episode row on a podcast show page (`MPSP…`).
+     *
+     * Episodes come as `musicMultiRowListItemRenderer`, not the
+     * `musicResponsiveListItemRenderer` every other track list uses, and say
+     * nothing about who made them — the show's header does, once. A
+     * continuation page carries no header, so [author] is blank there and the
+     * caller fills it in from the rows it already has.
+     *
+     * The duration is left out: the row only has it in words ("1시간 45분",
+     * "1 hr 45 min"), which `durationMillis` can't read, and the player learns
+     * the real length once the episode starts.
+     */
+    private fun parseEpisodeItem(renderer: JsonObject?, author: String): Song? {
+        if (renderer == null) return null
+        val videoId = renderer.o("onTap").o("watchEndpoint").s("videoId")
+            ?: renderer.o("overlay")
+                .o("musicItemThumbnailOverlayRenderer").o("content")
+                .o("musicPlayButtonRenderer").o("playNavigationEndpoint")
+                .o("watchEndpoint").s("videoId")
+            ?: return null
+        val title = renderer.o("title").runs()
+        if (title.isBlank()) return null
+        val thumbnails = renderer.o("thumbnail").o("musicThumbnailRenderer")
+            .o("thumbnail").a("thumbnails")
+        return Song(
+            videoId = videoId,
+            title = title,
+            artist = author,
+            thumbnailUrl = thumbnails.best(),
+            isVideo = thumbnails.isNotSquare(),
+        )
+    }
+
+    /** A podcast show's author, off its header strapline — blank off any other page. */
+    private fun showAuthor(root: JsonElement): String =
+        collectRenderers(root, "musicResponsiveHeaderRenderer").firstOrNull()
+            .o("straplineTextOne").runs().trim()
 
     /**
      * The promoted result at the top of an unfiltered search is a

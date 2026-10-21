@@ -726,10 +726,28 @@ object YtMusicRepository {
         } else {
             pageOf(response)
         }
+        rememberShowAuthor(browseId, page)
         // Only a playlist has an owner in the sense that matters — see
         // parsePlaylistOwned — and only its own first response can be asked.
         if (!browseId.startsWith("VL")) page
         else page.copy(owned = InnertubeParser.parsePlaylistOwned(response))
+    }
+
+    /**
+     * A podcast show's author, by the continuation token that pages on from it.
+     *
+     * Episode rows don't name who made them — the show's header does, and a
+     * continuation response has no header — so every episode past the first
+     * page would come back with no byline. Read on the way past by [moreSongs].
+     */
+    private val showAuthors = ConcurrentHashMap<String, String>()
+
+    private fun rememberShowAuthor(browseId: String, page: SongPage) {
+        if (!browseId.startsWith("MPSP")) return
+        val token = page.continuation ?: return
+        val author = page.songs.firstOrNull { it.artist.isNotBlank() }?.artist ?: return
+        if (showAuthors.size > 200) showAuthors.clear()
+        showAuthors[token] = author
     }
 
     /**
@@ -791,7 +809,10 @@ object YtMusicRepository {
 
     /** The page [SongPage.continuation] points at. */
     suspend fun moreSongs(token: String): Result<SongPage> = call("browse:more") {
-        pageOf(Innertube.browseContinuation(token))
+        val page = pageOf(Innertube.browseContinuation(token))
+        val author = showAuthors[token] ?: return@call page
+        page.continuation?.let { showAuthors[it] = author }
+        page.copy(songs = page.songs.map { if (it.artist.isBlank()) it.copy(artist = author) else it })
     }
 
     /**

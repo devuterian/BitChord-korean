@@ -2,6 +2,8 @@ package com.music.bitchord.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -12,8 +14,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onPlaced
@@ -34,6 +39,19 @@ class HeldItem internal constructor(
     val bounds: Rect,
 ) {
     var image: ImageBitmap? by mutableStateOf(null)
+        internal set
+
+    /**
+     * Where the finger that held the item is now, in window coordinates —
+     * set only once it has slid past touch slop since the hold, and cleared
+     * when it lifts. The finger stays with the item it went down on, so this
+     * is how a menu drawn over the item learns that it is being scrubbed.
+     */
+    var dragPosition: Offset? by mutableStateOf(null)
+        internal set
+
+    /** Where that finger lifted, if it slid first. A plain hold leaves it null. */
+    var releasePosition: Offset? by mutableStateOf(null)
         internal set
 }
 
@@ -96,6 +114,7 @@ fun Modifier.longPressMenuClickable(
                 val item = HeldItem(coordinates.boundsInWindow())
                 LongPressOrigin.record(item)
                 capture.pending = item
+                capture.dragging = item
                 capture.requests++
             }
             held()
@@ -103,6 +122,38 @@ fun Modifier.longPressMenuClickable(
     }
     return this
         .onPlaced { capture.coordinates = it }
+        // Only watches: the click below has already claimed the gesture by
+        // the time a hold fires, and keeps it until the finger lifts.
+        .pointerInput(capture) {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false)
+                capture.dragging = null
+                var start: Offset? = null
+                try {
+                    while (true) {
+                        val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull() ?: break
+                        val item = capture.dragging
+                        val coordinates = capture.coordinates?.takeIf { it.isAttached }
+                        if (item != null && coordinates != null) {
+                            // Measured from where the finger was when the hold fired.
+                            val origin = start ?: change.previousPosition.also { start = it }
+                            val position = coordinates.localToWindow(change.position)
+                            val slid = item.dragPosition != null ||
+                                (change.position - origin).getDistance() > viewConfiguration.touchSlop
+                            if (!change.pressed) {
+                                if (slid) item.releasePosition = position
+                                break
+                            }
+                            if (slid) item.dragPosition = position
+                        }
+                        if (!change.pressed) break
+                    }
+                } finally {
+                    capture.dragging?.dragPosition = null
+                    capture.dragging = null
+                }
+            }
+        }
         .combinedClickable(enabled = enabled, onClick = onClick, onLongClick = longClick)
         .drawWithContent {
             drawContent()
@@ -128,6 +179,8 @@ fun Modifier.longPressMenuClickable(
 private class HoldCapture {
     var coordinates: LayoutCoordinates? = null
     var pending: HeldItem? = null
+    /** The item a finger is still holding, while it stays down. */
+    var dragging: HeldItem? = null
     /** Read while drawing, so bumping it is what asks for a frame to record. */
     var requests by mutableIntStateOf(0)
     var handled = 0

@@ -69,6 +69,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -806,9 +807,36 @@ internal fun ActionRow(
             modifier = Modifier.size(if (menu) 20.dp else 22.dp),
         )
     }
+    // On a held item's popup the row also answers a finger slid onto it from
+    // the hold — see [HeldContextMenu].
+    val dragSelection = if (menu) LocalMenuDragSelection.current else null
+    val dragRow = remember { MenuDragRow() }
+    dragRow.enabled = enabled
+    dragRow.onClick = onClick
+    if (dragSelection != null) {
+        DisposableEffect(dragSelection) {
+            dragSelection.add(dragRow)
+            onDispose { dragSelection.remove(dragRow) }
+        }
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (dragSelection != null) {
+                    Modifier
+                        .onGloballyPositioned { dragRow.coordinates = it }
+                        .background(
+                            if (dragSelection.highlighted === dragRow) {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+                            } else {
+                                Color.Transparent
+                            },
+                        )
+                } else {
+                    Modifier
+                },
+            )
             .clickable(enabled = enabled, onClick = onClick)
             .then(
                 if (menu) {

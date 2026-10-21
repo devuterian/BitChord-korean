@@ -1,6 +1,8 @@
 package com.music.bitchord.ui.components
 
+import android.os.Build
 import android.provider.Settings
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -24,10 +26,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -41,9 +47,12 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -52,6 +61,7 @@ import com.music.bitchord.data.settings.AppSettings
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
+import kotlinx.coroutines.flow.filterNotNull
 import kotlin.math.roundToInt
 
 /**
@@ -70,6 +80,11 @@ import kotlin.math.roundToInt
  * [item] and [held] come and go together: non-null while the menu is wanted,
  * null once anything has closed it. The last pair is kept here so the menu can
  * play its way back into the list after the caller has already let go of it.
+ *
+ * The finger that held the item can keep going: sliding it over the menu
+ * picks out the row under it with a tick, and lifting it there runs that row
+ * — hold, slide, let go, in one gesture. A hold released without sliding
+ * leaves the menu open for a tap, as before.
  *
  * Both of the app's accessibility switches are honoured: "Reduce animation"
  * (or the system's animator scale at zero) turns the lift into a short fade
@@ -129,6 +144,37 @@ fun <T : Any> HeldContextMenu(
     }
 
     BackHandler(enabled = open, onBack = onDismiss)
+
+    val selection = remember { MenuDragSelection() }
+    val view = LocalView.current
+    LaunchedEffect(heldItem, open) {
+        if (!open) {
+            selection.highlighted = null
+            return@LaunchedEffect
+        }
+        snapshotFlow { heldItem.dragPosition }.collect { position ->
+            val row = position?.let(selection::rowAt)
+            if (row !== selection.highlighted) {
+                selection.highlighted = row
+                if (row != null) {
+                    view.performHapticFeedback(
+                        if (Build.VERSION.SDK_INT >= 34) {
+                            HapticFeedbackConstants.SEGMENT_FREQUENT_TICK
+                        } else {
+                            HapticFeedbackConstants.CLOCK_TICK
+                        },
+                    )
+                }
+            }
+        }
+    }
+    LaunchedEffect(heldItem, open) {
+        if (!open) return@LaunchedEffect
+        snapshotFlow { heldItem.releasePosition }.filterNotNull().collect { position ->
+            selection.highlighted = null
+            selection.rowAt(position)?.onClick?.invoke()
+        }
+    }
 
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     // Plain white or black at half strength, so the blur shows through as
@@ -222,7 +268,9 @@ fun <T : Any> HeldContextMenu(
                     .background(plate)
                     .border(0.5.dp, hairline, menuShape),
             ) {
-                actions(menuItem)
+                CompositionLocalProvider(LocalMenuDragSelection provides selection) {
+                    actions(menuItem)
+                }
             }
         },
     ) { measurables, constraints ->
@@ -334,6 +382,41 @@ fun <T : Any> HeldContextMenu(
         }
     }
 }
+
+/**
+ * The rows of an open [HeldContextMenu], for a finger sliding over them from
+ * the item it held. Rows find it through [LocalMenuDragSelection] and add
+ * themselves; their bounds are read when the finger moves rather than kept,
+ * since the menu is still springing into place under it.
+ */
+@Stable
+internal class MenuDragSelection {
+    private val rows = mutableListOf<MenuDragRow>()
+
+    /** The row under the finger, drawn pressed. */
+    var highlighted: MenuDragRow? by mutableStateOf(null)
+
+    fun add(row: MenuDragRow) {
+        rows += row
+    }
+
+    fun remove(row: MenuDragRow) {
+        rows -= row
+        if (highlighted === row) highlighted = null
+    }
+
+    fun rowAt(position: Offset): MenuDragRow? = rows.firstOrNull { row ->
+        row.enabled && row.coordinates?.takeIf { it.isAttached }?.boundsInWindow()?.contains(position) == true
+    }
+}
+
+internal class MenuDragRow {
+    var coordinates: LayoutCoordinates? = null
+    var enabled = true
+    var onClick: () -> Unit = {}
+}
+
+internal val LocalMenuDragSelection = staticCompositionLocalOf<MenuDragSelection?> { null }
 
 private suspend fun PointerInputScope.swallowAll() {
     awaitPointerEventScope {
