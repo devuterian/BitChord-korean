@@ -13,6 +13,10 @@ import javax.xml.parsers.DocumentBuilderFactory
 /**
  * Every language the app offers must translate every key in values/strings.xml. A missing key
  * doesn't crash, it silently falls back to English mid-screen, so this catches it at test time.
+ *
+ * BitChord-korean only maintains Korean, which must be complete. The other languages may lack
+ * the keys this fork added and show those in English; a key only one or two of them miss is
+ * still a gap.
  */
 @RunWith(Parameterized::class)
 class LocaleStringsTest(private val tag: String) {
@@ -54,6 +58,19 @@ class LocaleStringsTest(private val tag: String) {
         }
 
         /**
+         * Keys most upstream-maintained languages lack: the fork's own (some
+         * arrive with a cherry-picked PR's single translation), English
+         * outside Korean.
+         */
+        private val forkOnlyKeys: Set<String> by lazy {
+            val others = locales().filter { it != KOREAN }
+                .map { translatableKeys(parse(File(resDir, "values-${tagToQualifier(it)}/strings.xml"))) }
+            baseKeys.filter { key -> others.count { key !in it } * 2 > others.size }.toSet()
+        }
+
+        private const val KOREAN = "ko"
+
+        /**
          * App language tags are BCP-47 (`zh-CN` / `zh-TW`) while Android
          * resource directories use `-r` regions (`values-zh`, `values-zh-rTW`).
          * Mirrors what Android resolves at runtime: Simplified is the bare
@@ -72,7 +89,8 @@ class LocaleStringsTest(private val tag: String) {
         val localeFile = File(resDir, "values-$qualifier/strings.xml")
         assertTrue("values-$qualifier/strings.xml must exist (for language tag $tag)", localeFile.exists())
 
-        val missingKeys = baseKeys - translatableKeys(parse(localeFile))
+        val required = if (tag == KOREAN) baseKeys else baseKeys - forkOnlyKeys
+        val missingKeys = required - translatableKeys(parse(localeFile))
         assertTrue(
             "values-$qualifier/strings.xml (language $tag) is missing ${missingKeys.size} keys from values/strings.xml: $missingKeys",
             missingKeys.isEmpty(),
