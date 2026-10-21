@@ -293,6 +293,22 @@ fun String?.durationMillis(): Long {
     return (seconds * 1_000).coerceAtLeast(0L)
 }
 
+/**
+ * The count alone out of a stat YouTube writes in full — "1.2M" out of
+ * "1.2M subscribers", "6.52만" out of "구독자 6.52만명" — so the label can be
+ * re-said in the app's own words. The number isn't always the first word, and
+ * a unit may be glued on ("1.2M"), spaced off ("1,2 Mio.") or a CJK myriad
+ * ("6.52만"); the counter after it ("명", "人") is the label's, not the count's.
+ * Text with no digit in it comes back whole.
+ */
+fun String.statCount(): String =
+    STAT_COUNT.find(this)?.value?.trim() ?: this
+
+private val STAT_COUNT = Regex(
+    """\d(?:[\d.,'   ]*\d)?""" +
+        """(?:\s?[만억천万億千萬]|\s(?:\p{L}{1,4}\.|млн|mln|mil|mi|bin|lakh|लाख|करोड़)(?=\s|$)|[A-Za-z\u0400-\u04FF]{1,3}(?=\s|$))?""",
+)
+
 /** As [Song.artworkAt], for artwork that isn't a track's. */
 fun String?.artworkAt(px: Int): String? {
     if (this == null) return null

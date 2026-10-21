@@ -278,6 +278,7 @@ import com.music.bitchord.data.model.CARD_ART_PX
 import com.music.bitchord.data.model.HEADER_ART_PX
 import com.music.bitchord.data.model.HomeShelf
 import com.music.bitchord.data.model.LibraryPage
+import com.music.bitchord.data.model.statCount
 import com.music.bitchord.data.model.LikeStatus
 import com.music.bitchord.data.model.MoodGenre
 import com.music.bitchord.data.model.MoodGenreSection
@@ -5354,10 +5355,10 @@ private fun DesktopArtistPage(
                                     // so only the number is kept and the label re-said in the app's
                                     // words.
                                     artist.subscriberCountText?.let {
-                                        DesktopStatChip(Icons.Rounded.Person, "${it.substringBefore(' ')} subscribers")
+                                        DesktopStatChip(Icons.Rounded.Person, DesktopStrings.format("subscribers", it.statCount(), fallback = "%1\$s subscribers"))
                                     }
                                     artist.monthlyListenerCount?.let {
-                                        DesktopStatChip(Icons.Rounded.GraphicEq, "${it.substringBefore(' ')} monthly listeners")
+                                        DesktopStatChip(Icons.Rounded.GraphicEq, DesktopStrings.format("monthly_listeners", it.statCount(), fallback = "%1\$s monthly listeners"))
                                     }
                                 }
                             }

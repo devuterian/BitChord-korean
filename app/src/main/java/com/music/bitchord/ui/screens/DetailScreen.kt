@@ -150,6 +150,7 @@ import com.music.bitchord.data.model.UiState
 import com.music.bitchord.data.model.artworkAt
 import com.music.bitchord.data.model.durationMillis
 import com.music.bitchord.data.model.playingRowMatcher
+import com.music.bitchord.data.model.statCount
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.ui.components.DownloadedBadge
 import com.music.bitchord.ui.components.ExplicitSongTitle
@@ -1702,14 +1703,14 @@ private fun ArtistStatsRow(
         subscriberCountText?.let {
             StatChip(
                 icon = Icons.Rounded.Person,
-                text = stringResource(R.string.subscribers, it.substringBefore(' ')),
+                text = stringResource(R.string.subscribers, it.statCount()),
                 palette = palette,
             )
         }
         monthlyListenerCount?.let {
             StatChip(
                 icon = Icons.Rounded.GraphicEq,
-                text = stringResource(R.string.monthly_listeners, it.substringBefore(' ')),
+                text = stringResource(R.string.monthly_listeners, it.statCount()),
                 palette = palette,
             )
         }

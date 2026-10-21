@@ -5,6 +5,20 @@ import kotlin.test.assertEquals
 
 class ModelsTest {
     @Test
+    fun statCountKeepsOnlyTheCount() {
+        assertEquals("1.2M", "1.2M subscribers".statCount())
+        assertEquals("6.52만", "구독자 6.52만명".statCount())
+        assertEquals("163만", "월간 시청자 163만명".statCount())
+        assertEquals("1.2억", "구독자 1.2억명".statCount())
+        assertEquals("9,870", "구독자 9,870명".statCount())
+        assertEquals("65.2万", "チャンネル登録者数 65.2万人".statCount())
+        assertEquals("1,2 Mio.", "1,2 Mio. Abonnenten".statCount())
+        assertEquals("1,2 млн", "1,2 млн подписчиков".statCount())
+        assertEquals("120", "120 subscribers".statCount())
+        assertEquals("no count", "no count".statCount())
+    }
+
+    @Test
     fun durationIsSharedAcrossTargets() {
         assertEquals(225_000L, "3:45".durationMillis())
         assertEquals(3_723_000L, "1:02:03".durationMillis())
