@@ -141,17 +141,42 @@ object YtMusicRepository {
     }
 
     private suspend fun resolveChartEntry(entry: KoreanCharts.Entry): Song? {
-        val page = searchPage("${entry.title} ${entry.artist}".trim(), SearchFilter.SONGS).getOrNull() ?: return null
+        val query = "${entry.title} ${entry.artist}".trim()
+        val page = searchPage(query, SearchFilter.SONGS).getOrNull() ?: return null
         val song = page.rows.firstNotNullOfOrNull {
             when (it) {
                 is SearchResult.TopTrack -> it.song
                 is SearchResult.Track -> it.song
                 is SearchResult.Browse -> null
             }
-        } ?: return null
+        } ?: return resolveChartEntryByAlbum(entry, query)
         val matchSeconds = (song.durationMillis() / 1000).toInt()
         return song.takeIf { KoreanCharts.durationAcceptable(entry.durationSeconds, matchSeconds) }
     }
+
+    /**
+     * Signed-out song search comes back empty from Korean addresses, while album search and
+     * album pages still answer. So: the album the chart's song is on, then the song on it.
+     */
+    private suspend fun resolveChartEntryByAlbum(entry: KoreanCharts.Entry, query: String): Song? {
+        val album = searchPage(query, SearchFilter.ALBUMS).getOrNull()?.rows
+            ?.firstNotNullOfOrNull { (it as? SearchResult.Browse)?.item }
+            ?: return null
+        val songs = browseSongs(album.browseId).getOrNull()?.songs.orEmpty()
+        val wanted = chartTitleKey(entry.title).ifEmpty { TrackMatcher.normalize(entry.title) }
+        val fits = songs.filter {
+            KoreanCharts.durationAcceptable(entry.durationSeconds, (it.durationMillis() / 1000).toInt())
+        }
+        return fits.firstOrNull { chartTitleKey(it.title) == wanted }
+            ?: fits.firstOrNull { chartTitleKey(it.title).startsWith(wanted) || wanted.startsWith(chartTitleKey(it.title)) }
+            ?: fits.singleOrNull()
+    }
+
+    /** A title with case, width, brackets ("(Narr. ...)", "(feat. ...)") and spacing set aside. */
+    private fun chartTitleKey(title: String): String =
+        TrackMatcher.normalize(title).replace(CHART_TITLE_BRACKETS, "").filterNot { it.isWhitespace() }
+
+    private val CHART_TITLE_BRACKETS = Regex("""\([^)]*\)|\[[^]]*]""")
 
     val HOME_SUPPLEMENT_BROWSE_IDS = listOf(
         "FEmusic_new_releases",
