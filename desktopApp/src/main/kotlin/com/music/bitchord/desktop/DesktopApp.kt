@@ -2607,6 +2607,9 @@ fun BitChordDesktopApp() {
     }
 
     LaunchedEffect(Unit) {
+        // BitChord-korean: Home first. The local scan below can sit for minutes (or for good, when
+        // macOS holds a folder behind a privacy prompt), and Home has nothing to wait for from it.
+        loadHome()
         // Unpacks the analyser and its models on first run.
         DesktopAnalysisRuntime.ensureStarted()
         DesktopHorizontalScroll.install()
@@ -2622,7 +2625,6 @@ fun BitChordDesktopApp() {
             downloads = onDisk
             persistence.saveDownloads(onDisk)
         }
-        loadHome()
     }
 
     // The feed is the account's: signing in, out or across to another channel is a different Home,
