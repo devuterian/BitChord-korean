@@ -4,6 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.music.bitchord.ui.player.PlayerPlatform
 import com.music.bitchord.data.DebugLog
 import com.music.bitchord.data.TrackLog
+import com.music.bitchord.data.charts.KoreanCharts
 import com.music.bitchord.data.innertube.InnerTubeXResolver
 import com.music.bitchord.data.innertube.StreamResolver
 import com.music.bitchord.data.innertube.potoken.PoTokenGenerator
@@ -39,6 +40,7 @@ fun main() {
         DesktopTrackLog.log("$tag/$level: $message" + (error?.let { " (${it.message})" } ?: ""))
     }
     LyricsTranslation.cacheDir = DesktopMediaCache.directory.toFile()
+    KoreanCharts.cacheDir = DesktopMediaCache.directory.toFile()
     // The Spotify library both apps share, on the tokens the web player mints in JavaFX.
     SpotifyLibrary.auth = SpotifyLibrary.Auth {
         DesktopSpotifyToken.accessToken()?.let { SpotifyLibrary.Tokens(it, DesktopSpotifyToken.clientToken()) }
