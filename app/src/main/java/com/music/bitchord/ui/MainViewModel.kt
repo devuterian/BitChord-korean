@@ -1755,6 +1755,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         recent?.await()?.onSuccess { shelf ->
             if (identity == listenerKey()) shelf?.let { publishHomeShelves(listOf(it), prepend = true) }
         }
+        // The refreshed page replaces the old one wholesale, charts included, so put them back.
+        // Outside this scope so a cold chart cache doesn't hold the pull indicator open.
+        if (AppSettings.showKoreanCharts.value && _home.value is UiState.Success) {
+            val generation = homeLoadGeneration.get()
+            homeChartsJob?.cancel()
+            homeChartsJob = viewModelScope.launch {
+                val shelves = YtMusicRepository.koreanChartShelves()
+                if (shelves.isNotEmpty() && isCurrentHomeLoad(identity, generation) &&
+                    _home.value is UiState.Success
+                ) {
+                    publishHomeShelves(shelves)
+                }
+            }
+        }
     }
 
     /**
