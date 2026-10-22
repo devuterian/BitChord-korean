@@ -563,9 +563,33 @@ compose.desktop {
                 appCategory = "public.app-category.music"
                 dockName = "BitChord KR"
                 infoPlist {
+                    // BitChord-korean: without a localization list macOS hands the JVM English,
+                    // whatever the system language, and the desktop catalogues never switch.
                     extraKeysRawXml = """
                         <key>NSRequiresAquaSystemAppearance</key>
                         <false/>
+                        <key>CFBundleAllowMixedLocalizations</key>
+                        <true/>
+                        <key>CFBundleLocalizations</key>
+                        <array>
+                            <string>en</string>
+                            <string>ko</string>
+                            <string>de</string>
+                            <string>es</string>
+                            <string>fr</string>
+                            <string>he</string>
+                            <string>hi</string>
+                            <string>id</string>
+                            <string>it</string>
+                            <string>ja</string>
+                            <string>pl</string>
+                            <string>pt</string>
+                            <string>ru</string>
+                            <string>th</string>
+                            <string>tr</string>
+                            <string>zh-Hans</string>
+                            <string>zh-Hant</string>
+                        </array>
                     """.trimIndent()
                 }
             }
