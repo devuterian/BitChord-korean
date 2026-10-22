@@ -2476,7 +2476,7 @@ fun BitChordDesktopApp() {
         homeLoadingMore = false
         homeRecentsLoading = signedIn
         scope.launch {
-            launch {
+            val coreFeed = launch {
                 DesktopSearchClient.home().fold(
                     onSuccess = { feed ->
                         if (generation != homeGeneration) return@fold
@@ -2505,6 +2505,17 @@ fun BitChordDesktopApp() {
                 launch {
                     DesktopSearchClient.homeSupplement(browseId).onSuccess { shelves ->
                         if (generation == homeGeneration) publishHomeShelves(shelves)
+                    }
+                }
+            }
+            if (DesktopAppearanceSettings.showKoreanCharts.value) {
+                launch {
+                    // Looked up while the core feed loads, but published after it so the
+                    // charts land below YouTube's own shelves rather than above them.
+                    val charts = YtMusicRepository.koreanChartShelves()
+                    coreFeed.join()
+                    if (charts.isNotEmpty() && generation == homeGeneration && homeState is UiState.Success) {
+                        publishHomeShelves(charts)
                     }
                 }
             }
@@ -6301,6 +6312,16 @@ private fun DesktopSettingsScreen(
             }
             if (section == DesktopSettingsSection.APPEARANCE) item {
                 SettingsGroup(DesktopStrings["appearance", "Appearance"]) {
+                    val showKoreanCharts by DesktopAppearanceSettings.showKoreanCharts.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["show_korean_charts", "Show Korean charts"],
+                        DesktopStrings[
+                            "show_korean_charts_subtitle",
+                            "Adds Melon and Circle Chart shelves to Home. Songs are matched on YouTube Music.",
+                        ],
+                        showKoreanCharts,
+                        DesktopAppearanceSettings::setShowKoreanCharts,
+                    )
                     val reduceDynamicBlur by DesktopAppearanceSettings.reduceDynamicBlur.collectAsState()
                     SettingsToggle(
                         DesktopStrings["reduce_dynamic_blur", "Reduce dynamic blur"],

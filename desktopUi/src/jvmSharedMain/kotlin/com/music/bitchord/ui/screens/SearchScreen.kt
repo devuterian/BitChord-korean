@@ -1018,7 +1018,16 @@ private fun SearchFilterTabs(filter: SearchFilter, onFilterChange: (SearchFilter
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = entry.label,
+                    text = stringResource(
+                        when (entry) {
+                            SearchFilter.ALL -> Res.string.search_filter_all
+                            SearchFilter.SONGS -> Res.string.songs
+                            SearchFilter.VIDEOS -> Res.string.search_filter_videos
+                            SearchFilter.ALBUMS -> Res.string.albums
+                            SearchFilter.ARTISTS -> Res.string.artists
+                            SearchFilter.PLAYLISTS -> Res.string.playlists
+                        },
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = if (selected) MaterialTheme.colorScheme.background
                     else MaterialTheme.colorScheme.onBackground,
