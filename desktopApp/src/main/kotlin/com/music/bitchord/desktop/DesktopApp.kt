@@ -266,11 +266,11 @@ import androidx.compose.ui.unit.sp
 import bitchord.desktopapp.generated.resources.Res
 import bitchord.desktopapp.generated.resources.logo
 import bitchord.desktopapp.generated.resources.logo_mark
-import bitchord.desktopapp.generated.resources.sf_pro_display_bold
-import bitchord.desktopapp.generated.resources.sf_pro_display_heavy
-import bitchord.desktopapp.generated.resources.sf_pro_display_medium
-import bitchord.desktopapp.generated.resources.sf_pro_display_regular
-import bitchord.desktopapp.generated.resources.sf_pro_display_semibold
+import bitchord.desktopapp.generated.resources.pretendard_jp_bold
+import bitchord.desktopapp.generated.resources.pretendard_jp_extrabold
+import bitchord.desktopapp.generated.resources.pretendard_jp_medium
+import bitchord.desktopapp.generated.resources.pretendard_jp_regular
+import bitchord.desktopapp.generated.resources.pretendard_jp_semibold
 import com.music.bitchord.data.model.ArtistPage
 import com.music.bitchord.data.model.BrowseItem
 import com.music.bitchord.data.model.BrowseType
@@ -329,6 +329,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -452,30 +453,34 @@ internal fun desktopColorScheme() = darkColorScheme(
 
 @Composable
 internal fun desktopTypography(): Typography {
-    val sfProDisplay = FontFamily(
-        composeFont(Res.font.sf_pro_display_regular, FontWeight.W400),
-        composeFont(Res.font.sf_pro_display_medium, FontWeight.W500),
-        composeFont(Res.font.sf_pro_display_semibold, FontWeight.W600),
-        composeFont(Res.font.sf_pro_display_bold, FontWeight.W700),
-        composeFont(Res.font.sf_pro_display_heavy, FontWeight.W800),
+    // Pretendard JP, set for Korean first with the kana and kanji titles often
+    // carry; or the platform's own face when Settings asks for it.
+    val useSystemFont by DesktopAppearanceSettings.useSystemFont.collectAsState()
+    val pretendardJp = FontFamily(
+        composeFont(Res.font.pretendard_jp_regular, FontWeight.W400),
+        composeFont(Res.font.pretendard_jp_medium, FontWeight.W500),
+        composeFont(Res.font.pretendard_jp_semibold, FontWeight.W600),
+        composeFont(Res.font.pretendard_jp_bold, FontWeight.W700),
+        composeFont(Res.font.pretendard_jp_extrabold, FontWeight.W800),
     )
+    val family = if (useSystemFont) FontFamily.Default else pretendardJp
     val defaults = Typography()
     return defaults.copy(
-        displayLarge = defaults.displayLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
-        displayMedium = defaults.displayMedium.copy(fontFamily = sfProDisplay),
-        displaySmall = defaults.displaySmall.copy(fontFamily = sfProDisplay),
-        headlineLarge = defaults.headlineLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W800, fontSize = 30.sp, letterSpacing = (-0.7).sp),
-        headlineMedium = defaults.headlineMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W700, fontSize = 22.sp, letterSpacing = (-0.4).sp),
-        headlineSmall = defaults.headlineSmall.copy(fontFamily = sfProDisplay),
-        titleLarge = defaults.titleLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W700, fontSize = 20.sp, letterSpacing = (-0.3).sp),
-        titleMedium = defaults.titleMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W600, fontSize = 16.sp, letterSpacing = (-0.2).sp),
-        titleSmall = defaults.titleSmall.copy(fontFamily = sfProDisplay),
-        bodyLarge = defaults.bodyLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W400, fontSize = 16.sp),
-        bodyMedium = defaults.bodyMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W400, fontSize = 14.sp),
-        bodySmall = defaults.bodySmall.copy(fontFamily = sfProDisplay),
-        labelLarge = defaults.labelLarge.copy(fontFamily = sfProDisplay),
-        labelMedium = defaults.labelMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W600, fontSize = 12.sp),
-        labelSmall = defaults.labelSmall.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W600, fontSize = 11.sp),
+        displayLarge = defaults.displayLarge.copy(fontFamily = family, fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
+        displayMedium = defaults.displayMedium.copy(fontFamily = family),
+        displaySmall = defaults.displaySmall.copy(fontFamily = family),
+        headlineLarge = defaults.headlineLarge.copy(fontFamily = family, fontWeight = FontWeight.W800, fontSize = 30.sp, letterSpacing = (-0.7).sp),
+        headlineMedium = defaults.headlineMedium.copy(fontFamily = family, fontWeight = FontWeight.W700, fontSize = 22.sp, letterSpacing = (-0.4).sp),
+        headlineSmall = defaults.headlineSmall.copy(fontFamily = family),
+        titleLarge = defaults.titleLarge.copy(fontFamily = family, fontWeight = FontWeight.W700, fontSize = 20.sp, letterSpacing = (-0.3).sp),
+        titleMedium = defaults.titleMedium.copy(fontFamily = family, fontWeight = FontWeight.W600, fontSize = 16.sp, letterSpacing = (-0.2).sp),
+        titleSmall = defaults.titleSmall.copy(fontFamily = family),
+        bodyLarge = defaults.bodyLarge.copy(fontFamily = family, fontWeight = FontWeight.W400, fontSize = 16.sp),
+        bodyMedium = defaults.bodyMedium.copy(fontFamily = family, fontWeight = FontWeight.W400, fontSize = 14.sp),
+        bodySmall = defaults.bodySmall.copy(fontFamily = family),
+        labelLarge = defaults.labelLarge.copy(fontFamily = family),
+        labelMedium = defaults.labelMedium.copy(fontFamily = family, fontWeight = FontWeight.W600, fontSize = 12.sp),
+        labelSmall = defaults.labelSmall.copy(fontFamily = family, fontWeight = FontWeight.W600, fontSize = 11.sp),
     )
 }
 
@@ -1165,9 +1170,9 @@ fun BitChordDesktopApp() {
 
     fun openAlbum(browseId: String) = openCollection(browseId)
 
-    /** Copies the track's YouTube Music link. */
+    /** Copies the track's link, youtu.be or YouTube Music per Settings. */
     fun shareSong(song: Song) {
-        DesktopExternalLinks.copy("https://music.youtube.com/watch?v=${song.videoId}")
+        DesktopExternalLinks.copy(DesktopShareLinks.song(song.videoId))
         DesktopTrackLog.log("copied a link to '${song.title}'")
     }
 
@@ -1179,7 +1184,7 @@ fun BitChordDesktopApp() {
     fun shareCollection(collection: DesktopCollection) {
         val id = collection.browseId
         val url = when (collection.type) {
-            BrowseType.PLAYLIST -> "https://music.youtube.com/playlist?list=${id.removePrefix("VL")}"
+            BrowseType.PLAYLIST -> DesktopShareLinks.playlist(id.removePrefix("VL"))
             BrowseType.ALBUM -> "https://music.youtube.com/browse/$id"
             else -> return
         }
@@ -6308,6 +6313,28 @@ private fun DesktopSettingsScreen(
                         reduceDynamicBlur,
                         DesktopAppearanceSettings::setReduceDynamicBlur,
                     )
+                    val useSystemFont by DesktopAppearanceSettings.useSystemFont.collectAsState()
+                    val fontTitle = DesktopStrings["app_font", "Font"]
+                    if (settingsRowVisible(fontTitle, "Pretendard JP")) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+                            Text(fontTitle, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(10.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    colors = desktopChipColors(),
+                                    selected = !useSystemFont,
+                                    onClick = { DesktopAppearanceSettings.setUseSystemFont(false) },
+                                    label = { Text("Pretendard JP") },
+                                )
+                                FilterChip(
+                                    colors = desktopChipColors(),
+                                    selected = useSystemFont,
+                                    onClick = { DesktopAppearanceSettings.setUseSystemFont(true) },
+                                    label = { Text(DesktopStrings["app_font_system", "System"]) },
+                                )
+                            }
+                        }
+                    }
                     // Window furniture belongs beside the visual settings it changes, rather than
                     // interrupting playback controls. These rows remain Windows-only.
                     if (DesktopPlatform.drawsOwnWindowFrame) {
@@ -6416,6 +6443,36 @@ private fun DesktopSettingsScreen(
                     }
                 }
             }
+            if (section == DesktopSettingsSection.APPEARANCE) item {
+                // One switch per piece of the main player, on while it is shown. The stored
+                // settings are hides, so a fresh install shows everything. "Playing from" has no
+                // switch here: the desktop player never shows that caption.
+                SettingsGroup(DesktopStrings["player_screen", "Player screen"]) {
+                    @Composable
+                    fun playerToggle(key: String, fallback: String, hidden: StateFlow<Boolean>, setHidden: (Boolean) -> Unit) {
+                        val isHidden by hidden.collectAsState()
+                        SettingsToggle(DesktopStrings[key, fallback], "", !isHidden) { setHidden(!it) }
+                    }
+                    playerToggle("show_player_handle", "Drag handle", DesktopAppearanceSettings.hidePlayerHandle, DesktopAppearanceSettings::setHidePlayerHandle)
+                    playerToggle("show_explicit_badge", "Explicit badge", DesktopAppearanceSettings.hideExplicitBadge, DesktopAppearanceSettings::setHideExplicitBadge)
+                    playerToggle("show_like_button", "Like button", DesktopAppearanceSettings.hideLikeButton, DesktopAppearanceSettings::setHideLikeButton)
+                    playerToggle("show_lyric_strip", "Current lyric line", DesktopAppearanceSettings.hideLyricStrip, DesktopAppearanceSettings::setHideLyricStrip)
+                    playerToggle("show_time_labels", "Elapsed and remaining time", DesktopAppearanceSettings.hideTimeLabels, DesktopAppearanceSettings::setHideTimeLabels)
+                    playerToggle("show_quality_badge", "Audio quality badge", DesktopAppearanceSettings.hideQualityBadge, DesktopAppearanceSettings::setHideQualityBadge)
+                    playerToggle("show_mixing_indicator", "Automix indicator", DesktopAppearanceSettings.hideMixingIndicator, DesktopAppearanceSettings::setHideMixingIndicator)
+                    playerToggle("show_volume_bar", "Volume bar", DesktopAppearanceSettings.hideVolumeBar, DesktopAppearanceSettings::setHideVolumeBar)
+                    playerToggle("show_listen_together_button", "Listen Together button", DesktopAppearanceSettings.hideListenTogetherButton, DesktopAppearanceSettings::setHideListenTogetherButton)
+                    playerToggle("show_output_caption", "Output device name", DesktopAppearanceSettings.hideOutputCaption, DesktopAppearanceSettings::setHideOutputCaption)
+                    if (LocalSettingsQuery.current.isBlank()) {
+                        Text(
+                            DesktopStrings["player_screen_footer", "Turn off anything you\u2019d rather not see on the main player."],
+                            color = DesktopSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+            }
             if (section == DesktopSettingsSection.MISCELLANEOUS) item {
                 SettingsGroup(DesktopStrings["miscellaneous", "Miscellaneous"]) {
                     SettingsToggle(
@@ -6444,12 +6501,16 @@ private fun DesktopSettingsScreen(
                             onCloseToTrayChange,
                         )
                     }
-                    val hideVolumeBar by DesktopAppearanceSettings.hideVolumeBar.collectAsState()
+                    val shortShareLinks by DesktopAppearanceSettings.shortShareLinks.collectAsState()
                     SettingsToggle(
-                        DesktopStrings["hide_volume_bar", "Hide volume bar"],
-                        DesktopStrings["hide_volume_bar_subtitle", "Removes the volume slider from the main player"],
-                        hideVolumeBar,
-                        DesktopAppearanceSettings::setHideVolumeBar,
+                        DesktopStrings["short_share_links", "Share youtu.be links"],
+                        DesktopStrings[
+                            "short_share_links_subtitle",
+                            "Songs are shared and copied as youtu.be links, playlists as youtube.com links, " +
+                                "instead of music.youtube.com",
+                        ],
+                        shortShareLinks,
+                        DesktopAppearanceSettings::setShortShareLinks,
                     )
                 }
             }
@@ -8001,7 +8062,9 @@ private fun SettingsToggle(title: String, subtitle: String, checked: Boolean, on
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(subtitle, color = DesktopSecondary, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+            if (subtitle.isNotEmpty()) {
+                Text(subtitle, color = DesktopSecondary, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+            }
         }
         Spacer(Modifier.width(18.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange, colors = desktopSwitchColors())
