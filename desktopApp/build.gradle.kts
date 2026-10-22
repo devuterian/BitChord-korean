@@ -149,6 +149,9 @@ dependencies {
 
 tasks.withType<Test> {
     systemProperty("java.awt.headless", "true")
+    // The tests read English copy back; on a Korean Mac the catalogues now follow the system.
+    systemProperty("user.language", "en")
+    systemProperty("user.country", "US")
 }
 
 kotlin {
