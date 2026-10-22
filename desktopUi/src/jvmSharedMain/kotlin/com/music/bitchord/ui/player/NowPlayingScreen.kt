@@ -1037,7 +1037,8 @@ fun NowPlayingScreen(
     val lyricPicker = rememberLyricsPicker(
         song = song,
         lines = lyrics,
-        subLines = lyricsTranslation.subLines,
+        // The card has one line under each lyric: the translation, else the romanization.
+        subLines = lyricsTranslation.subLines ?: lyricsTranslation.romanSubLines,
         artworkUrl = remoteArt,
         haptics = haptics,
         onCard = { lyricsShare = it },
@@ -2183,6 +2184,7 @@ fun NowPlayingScreen(
                                 LyricsPanel(
                                     lines = lyrics.orEmpty(),
                                     subLines = lyricsTranslation.subLines,
+                                    romanSubLines = lyricsTranslation.romanSubLines,
                                     trackKey = song.videoId,
                                     playhead = lyricsPlayhead,
                                     looking = !lyricsUnavailable,
@@ -3513,6 +3515,7 @@ fun NowPlayingScreen(
                                     LyricsPanel(
                                         lines = lyrics.orEmpty(),
                                         subLines = lyricsTranslation.subLines,
+                                        romanSubLines = lyricsTranslation.romanSubLines,
                                         trackKey = song.videoId,
                                         playhead = lyricsPlayhead,
                                         looking = !lyricsUnavailable,
