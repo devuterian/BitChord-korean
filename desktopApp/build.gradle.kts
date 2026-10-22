@@ -28,7 +28,10 @@ val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 // intentionally displayed without a patch number (1.7 rather than 1.7.0).
 // The build number is the desktop version code; it also keeps "-beta1" out of the numeric installer version.
 val desktopVersionCode = 29
-val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") + ".$desktopVersionCode"
+// BitChord-korean: the fork's build rides in the last place (29 -> 2902), so each fork release
+// is a newer package to the installers and to macOS, not the same 1.8.29 again.
+val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") +
+    ".${desktopVersionCode * 100 + (rootProject.extra["bitchordKoreanBuild"] as Int)}"
 
 // FFmpeg decodes audio; see DesktopAudioDecoder.
 val javacppVersion = "1.5.12"
@@ -607,7 +610,8 @@ compose.desktop {
 
             windows {
                 iconFile.set(project.file("packaging/icons/AppIcon.ico"))
-                upgradeUuid = "8f3c1d24-6a2b-4f5e-9c17-2b8d54e0a913"
+                // Its own, so the fork never upgrades over upstream BitChord or the other way round.
+                upgradeUuid = "a6a88146-bcac-451d-bacf-176e700b71af"
                 menuGroup = "BitChord"
                 shortcut = true
                 dirChooser = false

@@ -12,7 +12,7 @@
     <string name="d_bitchord_is_free_software_and_so_is_everything_it_is_bui">BitChord와 BitChord를 구성하는 모든 소프트웨어는 자유 소프트웨어입니다.</string>
     <string name="d_bitchord_youtube_music_session">BitChord — YouTube Music 세션</string>
     <string name="d_blur_unfocused_lyrics">현재 줄 외 가사 흐리게</string>
-    <string name="d_choose_something_to_play">재생할 곡을 선택하세요</string>
+    <string name="d_choose_something_to_play">재생할 곡 선택</string>
     <string name="d_close_player">플레이어 닫기</string>
     <string name="d_close_up_next">다음 곡 닫기</string>
     <string name="d_closing_the_window_leaves_bitchord_in_the_tray_instead_o">창을 닫아도 BitChord를 종료하지 않고 트레이에 둡니다</string>

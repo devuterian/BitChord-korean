@@ -97,7 +97,7 @@ private fun desktopMain() = application {
     Window(
         onCloseRequest = { if (DesktopWindowVisibility.onCloseRequest()) exitApplication() },
         visible = visible,
-        title = "BitChord KR",
+        title = WINDOW_TITLE,
         icon = painterResource(Res.drawable.logo),
         state = state,
         // No system title bar on Windows, where the application draws its own instead — see
@@ -142,7 +142,7 @@ private fun desktopMain() = application {
                 (openingSize.width.value * transform.scaleX).roundToInt(),
                 (openingSize.height.value * transform.scaleY).roundToInt(),
             )
-            if (DesktopPlatform.isWindows && DesktopWindowsFrame.install("BitChord")) {
+            if (DesktopPlatform.isWindows && DesktopWindowsFrame.install(WINDOW_TITLE)) {
                 DesktopWindowBackdrop.apply()
             } else if (DesktopPlatform.isMac && DesktopMacFrame.install(composeWindow)) {
                 DesktopWindowBackdrop.apply()
@@ -189,3 +189,6 @@ private fun desktopMain() = application {
 
 private const val MIN_WINDOW_WIDTH_DP = 900.0
 private const val MIN_WINDOW_HEIGHT_DP = 600.0
+
+/** The window's title, which is also how the Windows frame finds the window it dresses. */
+private const val WINDOW_TITLE = "BitChord KR"

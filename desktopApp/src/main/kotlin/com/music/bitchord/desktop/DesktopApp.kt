@@ -787,9 +787,11 @@ fun BitChordDesktopApp() {
 
     // Whoever was signed in last is signed in again, before anything asks YouTube for something
     // that depends on it.
+    var accountsRestored by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { DesktopAccounts.activate() }
         sessionRevision++
+        accountsRestored = true
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
     var sourceConfigs by remember { mutableStateOf(persistence.sourceConfigs()) }
@@ -2613,8 +2615,10 @@ fun BitChordDesktopApp() {
     }
 
     LaunchedEffect(Unit) {
-        // BitChord-korean: Home first. The local scan below can sit for minutes (or for good, when
-        // macOS holds a folder behind a privacy prompt), and Home has nothing to wait for from it.
+        // BitChord-korean: Home before the local scan, which can sit for minutes (or for good, when
+        // macOS holds a folder behind a privacy prompt). After the account is back, though, or the
+        // first Home goes out signed out and is fetched again a moment later.
+        snapshotFlow { accountsRestored }.first { it }
         loadHome()
         // Unpacks the analyser and its models on first run.
         DesktopAnalysisRuntime.ensureStarted()

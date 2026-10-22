@@ -141,7 +141,7 @@ object DesktopLocalMusic {
         return if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
             ParsedName(title = parts[1].trim(), artist = parts[0].trim())
         } else {
-            ParsedName(title = name, artist = DesktopStrings["d_on_this_computer_title", "On This Computer"])
+            ParsedName(title = name, artist = "On This Computer")
         }
     }
 

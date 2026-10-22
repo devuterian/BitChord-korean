@@ -576,7 +576,7 @@ internal object DesktopModuleSource {
             Song(
                 videoId = TRACK_PREFIX + sourceId + SEPARATOR + module.id + SEPARATOR + id,
                 title = title,
-                artist = artist.ifBlank { DesktopStrings["unknown_artist", "Unknown Artist"] },
+                artist = artist.ifBlank { "Unknown Artist" },
                 artistId = artistId,
                 albumId = albumId,
                 albumName = album.ifBlank { null },

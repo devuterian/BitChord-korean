@@ -150,7 +150,7 @@ internal object DesktopJioSaavn {
         videoId = TRACK_PREFIX + id,
         title = title,
         artist = moreInfo.artistMap.primaryArtists.joinToString(", ") { it.name }
-            .ifBlank { DesktopStrings["unknown_artist", "Unknown Artist"] },
+            .ifBlank { "Unknown Artist" },
         albumName = moreInfo.album.ifBlank { null },
         thumbnailUrl = image
             .replace(Regex("150x150|50x50"), "500x500")

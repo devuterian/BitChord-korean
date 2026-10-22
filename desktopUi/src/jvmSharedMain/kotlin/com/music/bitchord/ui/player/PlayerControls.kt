@@ -217,13 +217,14 @@ internal fun PlayerScrubber(
     val reduceAnimation by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
     // One clock for the bar and the "Mixing" label. The desktop breathes slowly and gently; the
     // phone keeps the beat pulse.
-    val mixPulse = rememberMixPulse(
-        { mixBlend.value },
-        enabled = !reduceAnimation,
-        slow = slowMixPulse,
-    )
     val hideTimeLabels by PlayerSettings.hideTimeLabels.collectAsStateWithLifecycle()
     val hideMixingIndicator by PlayerSettings.hideMixingIndicator.collectAsStateWithLifecycle()
+    val mixPulse = rememberMixPulse(
+        { mixBlend.value },
+        // Hidden, the pulse has nothing to draw, so its frame clock stays off too.
+        enabled = !reduceAnimation && !hideMixingIndicator,
+        slow = slowMixPulse,
+    )
     Column(Modifier.fillMaxWidth()) {
         ThinSlider(
             value = shown,

@@ -12,6 +12,12 @@ internal object DesktopShareLinks {
         else "https://music.youtube.com/watch?v=$videoId"
 
     fun playlist(playlistId: String): String =
-        if (DesktopAppearanceSettings.shortShareLinks.value) "https://www.youtube.com/playlist?list=$playlistId"
-        else "https://music.youtube.com/playlist?list=$playlistId"
+        if (DesktopAppearanceSettings.shortShareLinks.value && !musicOnly(playlistId)) {
+            "https://www.youtube.com/playlist?list=$playlistId"
+        } else {
+            "https://music.youtube.com/playlist?list=$playlistId"
+        }
+
+    /** Mixes ("RD…") and Liked Music ("LM") only open on YouTube Music. */
+    private fun musicOnly(playlistId: String): Boolean = playlistId.startsWith("RD") || playlistId == "LM"
 }
