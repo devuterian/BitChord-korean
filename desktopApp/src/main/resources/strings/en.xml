@@ -1230,4 +1230,5 @@
     <string name="spotify_import_title">Import Spotify playlist</string>
     <string name="spotify_import_unmatched">%1$d songs weren\'t found on YouTube Music</string>
     <string name="spotify_library_subtitle">Your playlists and Liked Songs</string>
+    <string name="d_translation_follows_app">%1$s · follows the app</string>
 </resources>
