@@ -158,11 +158,11 @@ data class DesktopStreamFormat(
             statedKbps?.let { "$it kbps" },
             when (channels) {
                 null -> null
-                1 -> "Mono"
-                2 -> "Stereo"
-                else -> "$channels channels"
+                1 -> DesktopStrings["mono", "Mono"]
+                2 -> DesktopStrings["stereo", "Stereo"]
+                else -> DesktopStrings.format("d_n_channels", channels, fallback = "%1\$d channels")
             },
-        ).joinToString(" · ").ifBlank { "Unknown format" }
+        ).joinToString(" · ").ifBlank { DesktopStrings["d_unknown_format", "Unknown format"] }
 
     private companion object {
         val LOSSLESS_CODECS = setOf("flac", "alac", "wav", "aiff", "ape", "wv", "wavpack", "dsf", "dff", "tta")

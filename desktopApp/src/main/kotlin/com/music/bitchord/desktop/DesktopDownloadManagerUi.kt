@@ -121,9 +121,9 @@ private fun DownloadRow(item: DesktopDownloadItem) {
                 is DesktopDownloadState.Running -> Column {
                     Text(
                         if (state.fraction > 0f) {
-                            "Downloading · ${(state.fraction * 100).toInt()}%"
+                            DesktopStrings.format("d_downloading_percent", (state.fraction * 100).toInt(), fallback = "Downloading · %1\$d%%")
                         } else {
-                            "Downloading"
+                            DesktopStrings["downloading", "Downloading"]
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = DesktopSecondary,
@@ -176,8 +176,12 @@ private fun DownloadRow(item: DesktopDownloadItem) {
 }
 
 internal fun summary(total: Int, failed: Int, busy: Boolean): String = when {
-    total == 0 -> "Nothing downloading"
-    failed > 0 && !busy -> if (failed == 1) "1 download failed" else "$failed downloads failed"
-    total == 1 -> "1 track"
-    else -> "$total tracks"
+    total == 0 -> DesktopStrings["nothing_downloading", "Nothing downloading"]
+    failed > 0 && !busy -> if (failed == 1) {
+        DesktopStrings["d_one_download_failed", "1 download failed"]
+    } else {
+        DesktopStrings.format("d_n_downloads_failed", failed, fallback = "%1\$d downloads failed")
+    }
+    total == 1 -> DesktopStrings["d_one_track", "1 track"]
+    else -> DesktopStrings.format("d_n_tracks", total, fallback = "%1\$d tracks")
 }

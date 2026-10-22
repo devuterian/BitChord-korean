@@ -9,9 +9,9 @@ internal enum class DesktopBackdrop(
     val nativeKind: Int,
     val label: String,
 ) {
-    OFF(0, "Off"),
+    OFF(0, DesktopStrings["d_off", "Off"]),
     MICA(2, "Mica"),
-    ACRYLIC(3, "Acrylic"),
+    ACRYLIC(3, DesktopStrings["d_backdrop_acrylic", "Acrylic"]),
 }
 
 /**

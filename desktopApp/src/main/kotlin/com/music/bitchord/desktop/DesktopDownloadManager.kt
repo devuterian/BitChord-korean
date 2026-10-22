@@ -56,7 +56,7 @@ object DesktopDownloadManager {
                         userAgent = DOWNLOAD_USER_AGENT,
                     ) { done, total -> onProgress(done, total) }
                 }
-                check(Files.size(temporary) > 0L) { "Download failed: nothing was sent" }
+                check(Files.size(temporary) > 0L) { DesktopStrings["d_download_failed_nothing_was_sent", "Download failed: nothing was sent"] }
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING)
                 return Result.success(song.copy(localUri = target.toUri().toString(), localPath = target.toString()))
             }
@@ -69,7 +69,9 @@ object DesktopDownloadManager {
                 rangeFrom = existing.takeIf { it > 0L },
             )
             DesktopDownloadHttp.client.newCall(request).execute().use { response ->
-                check(response.isSuccessful) { "Download failed (HTTP ${response.code})" }
+                check(response.isSuccessful) {
+                    DesktopStrings.format("d_download_failed_http", response.code, fallback = "Download failed (HTTP %1\$d)")
+                }
                 val body = response.body
                 val append = existing > 0L && response.code == HTTP_PARTIAL
                 val offset = if (append) existing else 0L
@@ -101,7 +103,7 @@ object DesktopDownloadManager {
                     }
                 }
             }
-            check(Files.size(temporary) > 0L) { "Download failed: nothing was sent" }
+            check(Files.size(temporary) > 0L) { DesktopStrings["d_download_failed_nothing_was_sent", "Download failed: nothing was sent"] }
             runCatching {
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
             }.getOrElse {

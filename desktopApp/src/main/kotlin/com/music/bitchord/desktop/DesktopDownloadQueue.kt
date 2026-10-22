@@ -181,7 +181,7 @@ object DesktopDownloadQueue {
         // A cancelled transfer already left the manager; it is not a failure to report.
         if (cause is kotlinx.coroutines.CancellationException) return
         if (id !in _active.value) return
-        val reason = cause.message?.takeIf(String::isNotBlank) ?: "The download did not finish"
+        val reason = cause.message?.takeIf(String::isNotBlank) ?: DesktopStrings["d_the_download_did_not_finish", "The download did not finish"]
         _active.update { it + (id to item.copy(state = DesktopDownloadState.Failed(reason))) }
         DesktopTrackLog.log("download failed for '${item.song.title}' — $reason")
     }

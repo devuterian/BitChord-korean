@@ -276,16 +276,18 @@ internal class DesktopAddonClient(rawBaseUrl: String) {
     suspend fun manifest(): Result<DesktopAddonManifest> = manifests.get(baseUrl) {
         fetch<DesktopAddonManifest>(manifestUrl(baseUrl)).mapCatching { manifest ->
             if (manifest.id.isBlank()) {
-                throw DesktopAddonException("That URL answered, but not with an addon manifest")
+                throw DesktopAddonException(DesktopStrings["addon_err_not_manifest", "That URL answered, but not with an addon manifest"])
             }
             if (!manifest.isPlayable) {
                 val declared = manifest.resources.joinToString(", ")
-                throw DesktopAddonException("This addon declares $declared — BitChord needs search")
+                throw DesktopAddonException(
+                    DesktopStrings.format("addon_err_needs_search", declared, fallback = "This addon declares %1\$s — BitChord needs search"),
+                )
             }
             manifest
         }.recoverCatching { failure ->
             // A manifest 404 is not "no such track", it is "no addon here".
-            if (failure is DesktopAddonNotFound) throw DesktopAddonException("No manifest at that URL")
+            if (failure is DesktopAddonNotFound) throw DesktopAddonException(DesktopStrings["addon_err_no_manifest", "No manifest at that URL"])
             throw failure
         }
     }
@@ -380,9 +382,9 @@ internal class DesktopAddonClient(rawBaseUrl: String) {
     /** `{base}/{segments…}?{params}`, with every part properly encoded. */
     private fun endpoint(segments: List<String>, params: Map<String, String>): String {
         val parsed = runCatching { Url(baseUrl) }.getOrNull()
-            ?: throw DesktopAddonException("That is not a usable address")
+            ?: throw DesktopAddonException(DesktopStrings["addon_err_bad_address", "That is not a usable address"])
         if (parsed.protocol.name.lowercase() !in setOf("http", "https") || parsed.host.isBlank()) {
-            throw DesktopAddonException("That is not a usable address")
+            throw DesktopAddonException(DesktopStrings["addon_err_bad_address", "That is not a usable address"])
         }
         return URLBuilder(parsed).apply {
             appendPathSegments(segments)
@@ -406,11 +408,11 @@ internal class DesktopAddonClient(rawBaseUrl: String) {
             val code = response.status.value
             val wait = when {
                 code in 200..299 -> return@withContext response.bodyAsText().takeIf { it.isNotBlank() }
-                    ?: throw DesktopAddonException("Empty response")
+                    ?: throw DesktopAddonException(DesktopStrings["addon_err_empty", "Empty response"])
                 code == 404 -> throw DesktopAddonNotFound()
                 code >= 500 -> throw DesktopAddonUnavailable("HTTP $code")
                 code != 429 -> throw DesktopAddonException("HTTP $code")
-                attempt >= MAX_RETRIES -> throw DesktopAddonUnavailable("This addon is rate limiting BitChord")
+                attempt >= MAX_RETRIES -> throw DesktopAddonUnavailable(DesktopStrings["addon_err_rate_limited", "This addon is rate limiting BitChord"])
                 else -> retryAfterMs(response.headers["Retry-After"], attempt)
             }
             quietUntilMs = System.currentTimeMillis() + wait
@@ -570,7 +572,7 @@ internal object DesktopAddonSource {
 
     /** Whether this addon can be used, and what to say about it. */
     suspend fun health(config: DesktopSourceConfig): Result<String> {
-        if (config.baseUrl.isBlank()) return Result.failure(DesktopAddonException("An addon URL is required"))
+        if (config.baseUrl.isBlank()) return Result.failure(DesktopAddonException(DesktopStrings["addon_url_required", "An addon URL is required"]))
         val addon = client(config)
         return addon.manifest().fold(
             onSuccess = { manifest ->
@@ -579,12 +581,12 @@ internal object DesktopAddonSource {
                     listOfNotNull(
                         manifest.displayName.takeIf { it.isNotBlank() },
                         manifest.version.takeIf { it.isNotBlank() }?.let { "v$it" },
-                    ).joinToString(" ").ifBlank { "Addon ready" },
+                    ).joinToString(" ").ifBlank { DesktopStrings["d_addon_ready", "Addon ready"] },
                 )
             },
             onFailure = { failure ->
                 if (addon.probeSearch().isSuccess) {
-                    Result.success("No manifest · search works")
+                    Result.success(DesktopStrings["addon_no_manifest_ok", "No manifest · search works"])
                 } else {
                     Result.failure(failure)
                 }
@@ -815,7 +817,7 @@ internal object DesktopSourceFormats {
             parsed.protocol.name.lowercase() !in setOf("http", "https")
         ) {
             return@withContext Result.success(
-                DesktopDetectedFormat.Unsupported("That is not a web address BitChord can open"),
+                DesktopDetectedFormat.Unsupported(DesktopStrings["source_err_not_web_address", "That is not a web address BitChord can open"]),
             )
         }
         val base = DesktopAddonClient.normalizeBase(url)
@@ -847,22 +849,22 @@ internal object DesktopSourceFormats {
         }
         // Report what was actually found over a transport error from a URL the user never typed.
         firstUnsupported?.let { return@withContext Result.success(it) }
-        Result.failure(lastFailure ?: DesktopAddonUnavailable("Nothing answered at that address"))
+        Result.failure(lastFailure ?: DesktopAddonUnavailable(DesktopStrings["source_err_no_answer", "Nothing answered at that address"]))
     }
 
     internal fun detect(body: String, url: String = ""): DesktopDetectedFormat {
         val root = runCatching { DesktopAddonClient.json.parseToJsonElement(body) }.getOrNull()
-            ?: return DesktopDetectedFormat.Unsupported("That address did not return JSON")
+            ?: return DesktopDetectedFormat.Unsupported(DesktopStrings["source_err_not_json", "That address did not return JSON"])
         val obj = root as? JsonObject
             ?: return DesktopDetectedFormat.Unsupported(
-                "That JSON is a list, and every format BitChord reads is an object",
+                DesktopStrings["source_err_json_list", "That JSON is a list, and every format BitChord reads is an object"],
             )
 
         // A module index first: its marker is unmistakable and belongs to no other format.
         if (obj.keys.any { it.startsWith("category:") }) {
             val modules = runCatching { DesktopModuleSource.parseIndex(body) }.getOrDefault(emptyList())
             return if (modules.isEmpty()) {
-                DesktopDetectedFormat.Unsupported("That module index listed no modules")
+                DesktopDetectedFormat.Unsupported(DesktopStrings["source_err_no_modules", "That module index listed no modules"])
             } else {
                 DesktopDetectedFormat.ModuleIndex(modules.size, url)
             }
@@ -874,13 +876,19 @@ internal object DesktopSourceFormats {
             val manifest = runCatching {
                 DesktopAddonClient.json.decodeFromString<DesktopAddonManifest>(body)
             }.getOrNull() ?: return DesktopDetectedFormat.Unsupported(
-                "That looks like an addon manifest, but it could not be read",
+                DesktopStrings["source_err_manifest_unreadable", "That looks like an addon manifest, but it could not be read"],
             )
             return when {
                 manifest.id.isBlank() ->
-                    DesktopDetectedFormat.Unsupported("That JSON has no addon id, so it is not a manifest")
+                    DesktopDetectedFormat.Unsupported(
+                        DesktopStrings["d_source_err_no_addon_id", "That JSON has no addon id, so it is not a manifest"],
+                    )
                 !manifest.isPlayable -> DesktopDetectedFormat.Unsupported(
-                    "This addon declares ${manifest.resources.joinToString(", ")} — BitChord needs search",
+                    DesktopStrings.format(
+                        "addon_err_needs_search",
+                        manifest.resources.joinToString(", "),
+                        fallback = "This addon declares %1\$s — BitChord needs search",
+                    ),
                 )
                 else -> DesktopDetectedFormat.Addon(manifest, DesktopAddonClient.normalizeBase(url))
             }
@@ -889,17 +897,23 @@ internal object DesktopSourceFormats {
         val listKey = obj.entries.firstOrNull { it.value is JsonArray && (it.value as JsonArray).isNotEmpty() }?.key
         if (listKey != null) {
             return DesktopDetectedFormat.Unsupported(
-                "That JSON lists \"$listKey\", which is not a format BitChord reads",
+                DesktopStrings.format(
+                    "source_err_unknown_list_key",
+                    listKey,
+                    fallback = "That JSON lists \"%1\$s\", which is not a format BitChord reads",
+                ),
             )
         }
-        val keys = obj.keys.take(4).joinToString(", ").ifBlank { "nothing" }
-        return DesktopDetectedFormat.Unsupported("Unrecognised JSON — it holds $keys")
+        val keys = obj.keys.take(4).joinToString(", ").ifBlank { DesktopStrings["d_nothing_lowercase", "nothing"] }
+        return DesktopDetectedFormat.Unsupported(
+            DesktopStrings.format("source_err_unrecognised_json", keys, fallback = "Unrecognised JSON — it holds %1\$s"),
+        )
     }
 
     /** Stand-in for an addon that works but published nothing describing itself. */
     private fun synthesised(base: String) = DesktopAddonManifest(
         id = base,
-        name = runCatching { Url(base).host }.getOrNull().orEmpty().ifBlank { "Addon" },
+        name = runCatching { Url(base).host }.getOrNull().orEmpty().ifBlank { DesktopStrings["source_kind_addon", "Addon"] },
         resources = listOf("search", "stream"),
     )
 
@@ -911,7 +925,7 @@ internal object DesktopSourceFormats {
         val code = response.status.value
         when {
             code in 200..299 -> response.bodyAsText().takeIf { it.isNotBlank() }
-                ?: throw DesktopAddonException("Empty response")
+                ?: throw DesktopAddonException(DesktopStrings["addon_err_empty", "Empty response"])
             code == 404 -> throw DesktopAddonNotFound()
             code >= 500 -> throw DesktopAddonUnavailable("HTTP $code")
             else -> throw DesktopAddonException("HTTP $code")

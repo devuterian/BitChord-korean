@@ -193,9 +193,10 @@ object DesktopListeningStats {
 
     private fun labelFor(period: DesktopReplayPeriod, today: LocalDate): String = when (period) {
         DesktopReplayPeriod.THIS_MONTH ->
-            today.month.name.lowercase(Locale.ROOT).replaceFirstChar(Char::uppercase)
+            today.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.forLanguageTag(DesktopStrings.resolvedTag()))
+                .replaceFirstChar(Char::uppercase)
         DesktopReplayPeriod.THIS_YEAR -> today.year.toString()
-        DesktopReplayPeriod.ALL_TIME -> "All time"
+        DesktopReplayPeriod.ALL_TIME -> DesktopStrings["all_time", "All time"]
     }
 
     internal fun mergeSong(old: Song?, current: Song): Song = old?.copy(

@@ -55,7 +55,7 @@ internal object DesktopWebSignIn {
     suspend fun captureSpotify(): String = capture(Service.SPOTIFY)
 
     private suspend fun capture(service: Service): String {
-        check(available) { "This desktop cannot show a sign-in window (JavaFX did not start)." }
+        check(available) { DesktopStrings["d_this_desktop_cannot_show_a_sign_in_window", "This desktop cannot show a sign-in window (JavaFX did not start)."] }
         return suspendCancellableCoroutine { continuation ->
             Platform.runLater {
                 val window = SignInWindow(service) { result ->
@@ -90,7 +90,7 @@ internal object DesktopWebSignIn {
     ) {
         private val stage = Stage()
         private val root = BorderPane()
-        private val confirm = Button("Use this profile")
+        private val confirm = Button(DesktopStrings["use_this_profile", "Use this profile"])
         // The page's host, since the window has no address bar to show it.
         private val where = Label().apply { style = "-fx-text-fill: #aaaaaa;" }
         private var view: WebView? = null
@@ -98,8 +98,11 @@ internal object DesktopWebSignIn {
         private var done = false
 
         init {
-            stage.title = service.title
-            val startOver = Button("Start over").apply { setOnAction { load() } }
+            stage.title = when (service) {
+                Service.YOUTUBE_MUSIC -> DesktopStrings["sign_in_youtube_music", service.title]
+                Service.SPOTIFY -> DesktopStrings["d_sign_in_to_spotify", service.title]
+            }
+            val startOver = Button(DesktopStrings["d_start_over", "Start over"]).apply { setOnAction { load() } }
             val bar = HBox(8.0, startOver, Region().also { HBox.setHgrow(it, Priority.ALWAYS) }, where)
             bar.padding = Insets(8.0)
             if (service == Service.YOUTUBE_MUSIC) {

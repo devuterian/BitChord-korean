@@ -144,7 +144,7 @@ internal fun DesktopAccountSelector(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    if (accounts.isEmpty()) "Accounts" else "Switch account",
+                    if (accounts.isEmpty()) DesktopStrings["accounts", "Accounts"] else DesktopStrings["switch_account", "Switch account"],
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
@@ -170,7 +170,7 @@ internal fun DesktopAccountSelector(
                 accounts.forEach { account ->
                     item(key = "header-${account.accountId}") {
                         Text(
-                            account.email.ifBlank { account.name.ifBlank { "Account" } },
+                            account.email.ifBlank { account.name.ifBlank { DesktopStrings["d_account", "Account"] } },
                             style = MaterialTheme.typography.labelMedium,
                             color = DesktopSecondary,
                             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
@@ -188,15 +188,15 @@ internal fun DesktopAccountSelector(
                         )
                     }
                 }
-                item { DesktopSelectorAction(BitChordIcons.Plus, "Add account", onAddAccount) }
+                item { DesktopSelectorAction(BitChordIcons.Plus, DesktopStrings["add_account", "Add account"], onAddAccount) }
                 if (accounts.isNotEmpty()) {
                     item {
-                        DesktopSelectorAction(Icons.Rounded.ManageAccounts, "Manage accounts") {
+                        DesktopSelectorAction(Icons.Rounded.ManageAccounts, DesktopStrings["manage_accounts", "Manage accounts"]) {
                             managing = !managing
                         }
                     }
                 }
-                item { DesktopSelectorAction(Icons.Rounded.Settings, "Settings", onOpenSettings) }
+                item { DesktopSelectorAction(Icons.Rounded.Settings, DesktopStrings["settings", "Settings"], onOpenSettings) }
                 item { Spacer(Modifier.height(10.dp)) }
             }
         }
@@ -238,7 +238,7 @@ private fun DesktopProfileRow(
         Column(Modifier.weight(1f)) {
             Text(profile.name, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                profile.handle.ifBlank { if (profile.isBrandAccount) "Brand account" else "Personal" },
+                profile.handle.ifBlank { if (profile.isBrandAccount) DesktopStrings["brand_account", "Brand account"] else DesktopStrings["personal", "Personal"] },
                 style = MaterialTheme.typography.bodySmall,
                 color = DesktopSecondary,
                 maxLines = 1,
@@ -337,7 +337,7 @@ internal fun DesktopSignInDialog(
             }
             Text(
                 if (webSignIn) {
-                    "Sign in with Google in a BitChord window, then choose \"Use this profile\"."
+                    DesktopStrings["d_sign_in_with_google_in_a_bitchord_window", "Sign in with Google in a BitChord window, then choose \"Use this profile\"."]
                 } else {
                     DesktopStrings[
                         "d_google_signs_in_inside_a_browser",
@@ -413,12 +413,12 @@ internal fun DesktopSignInDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("Sign in with Google", color = Color.White)
+                                    Text(DesktopStrings["d_sign_in_with_google", "Sign in with Google"], color = Color.White)
                                     Text(
                                         if (busy == WEB_SIGN_IN) {
-                                            "Finish in the sign-in window, then choose \"Use this profile\""
+                                            DesktopStrings["d_finish_in_the_sign_in_window_then_choose_use_this_profile", "Finish in the sign-in window, then choose \"Use this profile\""]
                                         } else {
-                                            "Opens Google's sign-in page in a BitChord window"
+                                            DesktopStrings["d_opens_googles_sign_in_page_in_a_bitchord_window", "Opens Google's sign-in page in a BitChord window"]
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = DesktopSecondary,
