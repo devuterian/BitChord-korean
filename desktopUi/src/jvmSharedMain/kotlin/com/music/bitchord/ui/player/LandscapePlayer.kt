@@ -311,16 +311,18 @@ internal fun LandscapePlayerLayout(
 
             // The sheet closes from a downward drag anywhere nothing else
             // claims, as it does in portrait; this is only the promise.
-            Box(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = 8.dp)
-                    .width(38.dp)
-                    .height(5.dp)
-                    .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(LocalPlayerTint.current.copy(alpha = 0.70f)),
-            )
+            if (!PlayerSettings.hidePlayerHandle.collectAsStateWithLifecycle().value) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = 8.dp)
+                        .width(38.dp)
+                        .height(5.dp)
+                        .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(LocalPlayerTint.current.copy(alpha = 0.70f)),
+                )
+            }
         }
     }
 }
@@ -560,7 +562,9 @@ internal fun LandscapeCredits(
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     onOverflowChange = { titleOverflowing = it },
-                    leading = if (song.isExplicit == true) {
+                    leading = if (song.isExplicit == true &&
+                        !PlayerSettings.hideExplicitBadge.collectAsStateWithLifecycle().value
+                    ) {
                         { ExplicitBadge(Color.White) }
                     } else {
                         null
@@ -586,7 +590,9 @@ internal fun LandscapeCredits(
         // Same gate as the portrait player's: no account to like against for a
         // guest, and no YouTube identity to rate a local file or a finished
         // download against either.
-        if (signedIn && song.localUri == null) {
+        if (signedIn && song.localUri == null &&
+            !PlayerSettings.hideLikeButton.collectAsStateWithLifecycle().value
+        ) {
             val liked = likeStatus == LikeStatus.LIKE
             CircleGlyph(
                 icon = if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart,

@@ -829,6 +829,9 @@ fun NowPlayingScreen(
     val openListenTogetherMembers: () -> Unit = { showListenTogetherMembers = true }
 
     val syncedLyricsEnabled by PlayerSettings.syncedLyrics.collectAsStateWithLifecycle()
+    val hideLyricStrip by PlayerSettings.hideLyricStrip.collectAsStateWithLifecycle()
+    val hidePlayerHandle by PlayerSettings.hidePlayerHandle.collectAsStateWithLifecycle()
+    val hideOutputCaption by PlayerSettings.hideOutputCaption.collectAsStateWithLifecycle()
     val lyricsOffsetMs by PlayerSettings.lyricsOffsetMs.collectAsStateWithLifecycle()
     // A lambda, not a value: read by the lyric strip and panel in scopes of
     // their own, so a tick recomposes them and not the player around them.
@@ -1580,11 +1583,13 @@ fun NowPlayingScreen(
             modifier = Modifier.fillMaxWidth().height(20.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
-            OutputCaption(
-                accountName = accountName,
-                onOpenOutput = openAudioOutput,
-                onOpenMembers = openListenTogetherMembers,
-            )
+            if (!hideOutputCaption) {
+                OutputCaption(
+                    accountName = accountName,
+                    onOpenOutput = openAudioOutput,
+                    onOpenMembers = openListenTogetherMembers,
+                )
+            }
         }
     }
 
@@ -2062,7 +2067,7 @@ fun NowPlayingScreen(
                             // the transport lives under the sleeve and the full
                             // lyric sheet owns the column on the right, so there is
                             // no room — or need — for a single line here.
-                            lyricStrip = if (compact && syncedLyricsEnabled) {
+                            lyricStrip = if (compact && syncedLyricsEnabled && !hideLyricStrip) {
                                 {
                                     CurrentLyricStrip(
                                         lines = lyricsTranslation.displayedLyrics,
@@ -2532,26 +2537,28 @@ fun NowPlayingScreen(
                         // the top of the strip. As lyrics or the queue replace the
                         // album-cover player, it glides into the now-empty strip's
                         // vertical centre alongside the caption's fade.
-                        Box(
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .offset {
-                                    IntOffset(
-                                        x = 0,
-                                        y = lerp(
-                                            6.dp,
-                                            (topStrip - 5.dp).coerceAtLeast(0.dp) / 2,
-                                            p(),
-                                        ).roundToPx(),
-                                    )
-                                }
-                                .width(38.dp)
-                                .height(5.dp)
-                                .graphicsLayer { alpha = spotifyChromeAlpha }
-                                .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(LocalPlayerTint.current.copy(alpha = 0.70f)),
-                        )
+                        if (!hidePlayerHandle) {
+                            Box(
+                                Modifier
+                                    .align(Alignment.TopCenter)
+                                    .offset {
+                                        IntOffset(
+                                            x = 0,
+                                            y = lerp(
+                                                6.dp,
+                                                (topStrip - 5.dp).coerceAtLeast(0.dp) / 2,
+                                                p(),
+                                            ).roundToPx(),
+                                        )
+                                    }
+                                    .width(38.dp)
+                                    .height(5.dp)
+                                    .graphicsLayer { alpha = spotifyChromeAlpha }
+                                    .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(LocalPlayerTint.current.copy(alpha = 0.70f)),
+                            )
+                        }
                     // The "Playing from …" caption is gone: the player names the
                     // track and its credits, and where the queue came from is the
                     // queue's own business. Nothing to render here any more.
@@ -3396,7 +3403,9 @@ fun NowPlayingScreen(
                                             ),
                                             color = Color.White,
                                             enabled = scrolling,
-                                            leading = if (song.isExplicit == true) {
+                                            leading = if (song.isExplicit == true &&
+                                                !PlayerSettings.hideExplicitBadge.collectAsStateWithLifecycle().value
+                                            ) {
                                                 { ExplicitBadge(color = Color.White) }
                                             } else {
                                                 null
@@ -3433,7 +3442,9 @@ fun NowPlayingScreen(
                             // there's no account to record it against — and neither
                             // does a local file or a finished download, which carries
                             // no YouTube identity to rate.
-                            if (signedIn && song.localUri == null) {
+                            if (signedIn && song.localUri == null &&
+                                !PlayerSettings.hideLikeButton.collectAsStateWithLifecycle().value
+                            ) {
                                 val liked = likeStatus == LikeStatus.LIKE
                                 CircleGlyph(
                                     icon = if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart,
@@ -3705,7 +3716,7 @@ fun NowPlayingScreen(
                     // accompanied by a dedicated lyrics button in the bottom row. Its
                     // one-line slot remains, invisibly, so opening lyrics cannot grow
                     // the half-player merely to make room for the source label.
-                    if (!lyricsOpen && syncedLyricsEnabled) {
+                    if (!lyricsOpen && syncedLyricsEnabled && !hideLyricStrip) {
                         CurrentLyricStrip(
                             lines = lyricsTranslation.displayedLyrics,
                             trackKey = song.videoId,
@@ -3721,7 +3732,7 @@ fun NowPlayingScreen(
                             onClick = openLyrics,
                         )
                     }
-                    if (!lyricsOpen && !syncedLyricsEnabled) {
+                    if (!lyricsOpen && (!syncedLyricsEnabled || hideLyricStrip)) {
                         Text(
                             text = "\u00A0",
                             style = MaterialTheme.typography.titleMedium,

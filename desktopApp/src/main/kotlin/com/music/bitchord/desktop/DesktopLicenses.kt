@@ -70,6 +70,12 @@ internal object DesktopLicenses {
                     "The backdrop blur behind the floating bars, as on Android.",
                 ),
                 DesktopLicense("SLF4J", "MIT", "https://www.slf4j.org"),
+                DesktopLicense(
+                    "Pretendard JP",
+                    "OFL-1.1",
+                    "https://github.com/orioncactus/pretendard",
+                    "The interface font. Copyright (c) 2021, Kil Hyung-jin.",
+                ),
             ),
         ),
         DesktopLicenseGroup(
