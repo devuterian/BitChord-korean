@@ -7,7 +7,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val appVersion: String = providers.gradleProperty("bitchord.version").orNull
     ?.removePrefix("v")
     ?.takeIf { it.isNotBlank() }
-    ?: "1.8-beta1"
+    // BitChord-korean: the fork's own "<upstream>.<build>" from the root build script.
+    ?: "${rootProject.extra["bitchordVersionName"]}.${rootProject.extra["bitchordKoreanBuild"]}"
 
 /** Which platform this build is *for*, which is the host unless told otherwise. */
 val hostIsWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
@@ -526,7 +527,7 @@ compose.desktop {
                 TargetFormat.Deb,
                 TargetFormat.Rpm,
             )
-            packageName = "BitChord"
+            packageName = "BitChord KR"
             packageVersion = nativePackageVersion
             description = if (targetOs == "windows") "BitChord" else "Aesthetic YouTube Music client"
             vendor = "BitChord contributors"
@@ -558,9 +559,9 @@ compose.desktop {
 
             macOS {
                 iconFile.set(project.file("packaging/icons/AppIcon.icns"))
-                bundleID = "com.music.bitchord"
+                bundleID = "com.marierie.bitchordkorean"
                 appCategory = "public.app-category.music"
-                dockName = "BitChord"
+                dockName = "BitChord KR"
                 infoPlist {
                     extraKeysRawXml = """
                         <key>NSRequiresAquaSystemAppearance</key>
