@@ -43,7 +43,9 @@ object DesktopLyricsClient {
     internal data class Source(val name: String, val detail: String, val wordSynced: Boolean)
 
     /** Every provider the phone has, in the order it asks them out of the box. */
-    internal val sources: List<Source> = LyricsSource.offered.map { Source(it.label, it.detail, it.wordSynced) }
+    internal val sources: List<Source> = LyricsSource.offered.map {
+        Source(it.label, DesktopStrings["d_lyrics_source_detail_${it.name.lowercase()}", it.detail], it.wordSynced)
+    }
 
     /** The sources that will actually be asked, in the order they are asked. */
     internal fun enabledSources(order: List<String>, enabled: Set<String>): List<String> =
@@ -72,14 +74,14 @@ object DesktopLyricsClient {
         val persistence = DesktopPersistence()
         // Off in Settings means no lookup at all rather than a lookup nobody sees.
         if (!persistence.boolean(KEY_SYNCED_LYRICS, true)) {
-            return Result.failure(IllegalStateException("Synced lyrics are switched off"))
+            return Result.failure(IllegalStateException(DesktopStrings["d_synced_lyrics_are_switched_off", "Synced lyrics are switched off"]))
         }
         val configured = enabledSources(persistence.lyricsSourceOrder(), persistence.lyricsEnabledSources())
             .mapNotNull(::lyricsSourceNamed)
         val asked = only?.let(::lyricsSourceNamed)?.let(::listOf) ?: configured
         // Every source unticked is a state the listener can reach, and it means the same thing as
         // the feature being off.
-        if (asked.isEmpty()) return Result.failure(IllegalStateException("No lyrics sources are enabled"))
+        if (asked.isEmpty()) return Result.failure(IllegalStateException(DesktopStrings["d_no_lyrics_sources_are_enabled", "No lyrics sources are enabled"]))
 
         // The title and artist are part of the key, not just the video id: the
         // player's manual search asks the same track's providers under a typed
@@ -92,7 +94,7 @@ object DesktopLyricsClient {
         // on disk is a round trip, and it is why a download showed nothing offline.
         val embedded = if (only == null) embedded(song) else null
         val result = if (embedded != null) {
-            Result.success(DesktopLyrics("Downloaded", embedded))
+            Result.success(DesktopLyrics(DesktopStrings["downloaded", "Downloaded"], embedded))
         } else {
             val found = LyricsRepository.lyrics(
                 videoId = song.videoId,
@@ -107,7 +109,7 @@ object DesktopLyricsClient {
                 onSourceResult = { source, result -> onSourceResult?.invoke(source, result != null) },
             )
             if (found == null) {
-                Result.failure(IllegalStateException("Lyrics unavailable"))
+                Result.failure(IllegalStateException(DesktopStrings["d_lyrics_unavailable", "Lyrics unavailable"]))
             } else {
                 Result.success(DesktopLyrics(found.source.label, found.lines))
             }

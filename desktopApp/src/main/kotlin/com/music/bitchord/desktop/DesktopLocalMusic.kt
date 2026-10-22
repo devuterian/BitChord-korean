@@ -48,7 +48,7 @@ object DesktopLocalMusic {
     }
 
     /** What the Local Music settings row says underneath its title. */
-    fun folderLabel(): String = folder()?.fileName?.toString() ?: "All audio folders"
+    fun folderLabel(): String = folder()?.fileName?.toString() ?: DesktopStrings["all_audio_folders", "All audio folders"]
 
     internal const val KEY_LOCAL_MUSIC_FOLDER = "local_music_folder"
 
@@ -61,7 +61,7 @@ object DesktopLocalMusic {
     fun chooseFolder(): Path? = runCatching {
         val chooser = javax.swing.JFileChooser(folder()?.toFile() ?: java.io.File(System.getProperty("user.home")))
         chooser.fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
-        chooser.dialogTitle = "Local music folder"
+        chooser.dialogTitle = DesktopStrings["local_music_folder", "Local music folder"]
         if (chooser.showOpenDialog(null) != javax.swing.JFileChooser.APPROVE_OPTION) return null
         chooser.selectedFile?.toPath()
     }.getOrNull()
@@ -141,7 +141,7 @@ object DesktopLocalMusic {
         return if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
             ParsedName(title = parts[1].trim(), artist = parts[0].trim())
         } else {
-            ParsedName(title = name, artist = "On This Computer")
+            ParsedName(title = name, artist = DesktopStrings["d_on_this_computer_title", "On This Computer"])
         }
     }
 

@@ -105,9 +105,9 @@ internal fun DesktopPlaylistDialog(
             return@DesktopDialogFrame
         }
 
-        DialogHeading("Add to playlist", song?.let { "${it.title} — ${it.artist}" }.orEmpty())
+        DialogHeading(DesktopStrings["add_to_playlist", "Add to playlist"], song?.let { "${it.title} — ${it.artist}" }.orEmpty())
         error?.let { DialogError(it) }
-        DialogAction(BitChordIcons.Plus, "New playlist", enabled = !busy) { creating = true }
+        DialogAction(BitChordIcons.Plus, DesktopStrings["new_playlist", "New playlist"], enabled = !busy) { creating = true }
 
         if (signedIn && !canUseAccount) {
             Text(
@@ -127,11 +127,11 @@ internal fun DesktopPlaylistDialog(
             }
             account.isEmpty() && localPlaylists.isEmpty() -> Text(
                 when {
-                    !signedIn -> "No playlists on this computer yet. Sign in to see the ones on your account."
+                    !signedIn -> DesktopStrings["d_no_playlists_on_this_computer_yet_sign_in_to_see_the_on", "No playlists on this computer yet. Sign in to see the ones on your account."]
                     // Signed in, but this track cannot go on the account — so offering to sign in
                     // would be answering a question nobody asked.
-                    !canUseAccount -> "No playlists on this computer yet. Make one and this track goes straight into it."
-                    else -> "No playlists yet. Make one and this song goes straight into it."
+                    !canUseAccount -> DesktopStrings["d_no_playlists_on_this_computer_yet_make_one_and_this_tra", "No playlists on this computer yet. Make one and this track goes straight into it."]
+                    else -> DesktopStrings["d_no_playlists_yet_make_one_and_this_song_goes_straight_i", "No playlists yet. Make one and this song goes straight into it."]
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = DesktopSecondary,
@@ -139,7 +139,7 @@ internal fun DesktopPlaylistDialog(
             )
             else -> LazyColumn(Modifier.heightIn(max = 320.dp)) {
                 if (account.isNotEmpty()) {
-                    item(key = "heading:account") { DialogSectionHeading("On your account") }
+                    item(key = "heading:account") { DialogSectionHeading(DesktopStrings["d_on_your_account", "On your account"]) }
                     items(account.size, key = { account[it].playlistId }) { index ->
                         val playlist = account[index]
                         DialogAction(
@@ -151,13 +151,13 @@ internal fun DesktopPlaylistDialog(
                     }
                 }
                 if (localPlaylists.isNotEmpty()) {
-                    item(key = "heading:local") { DialogSectionHeading("On this computer") }
+                    item(key = "heading:local") { DialogSectionHeading(DesktopStrings["d_on_this_computer", "On this computer"]) }
                     items(localPlaylists.size, key = { localPlaylists[it].id }) { index ->
                         val playlist = localPlaylists[index]
                         DialogAction(
                             BitChordIcons.Queue,
                             playlist.title,
-                            subtitle = "${playlist.songs.size} songs",
+                            subtitle = DesktopStrings.format("d_n_songs", playlist.songs.size, fallback = "%1\$d songs"),
                             enabled = !busy,
                         ) { onPickLocal(playlist) }
                     }
@@ -203,7 +203,7 @@ private fun NewPlaylistForm(
                 color = Color.White,
             )
             Text(
-                if (signedIn) "Saved to your YouTube Music account" else "Saved on this computer",
+                if (signedIn) DesktopStrings["d_saved_to_your_youtube_music_account", "Saved to your YouTube Music account"] else DesktopStrings["d_saved_on_this_computer", "Saved on this computer"],
                 style = MaterialTheme.typography.bodySmall,
                 color = DesktopSecondary,
             )
@@ -246,13 +246,13 @@ private fun NewPlaylistForm(
     }
 
     if (signedIn) {
-        DialogSectionHeading("Who can see it")
+        DialogSectionHeading(DesktopStrings["who_can_see_it", "Who can see it"])
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 22.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PlaylistPrivacy.entries.forEach { option ->
-                PrivacyPill(option.icon, option.label, option == privacy) { privacy = option }
+                PrivacyPill(option.icon, DesktopStrings["d_privacy_${option.name.lowercase()}", option.label], option == privacy) { privacy = option }
             }
         }
     }
@@ -287,7 +287,7 @@ internal fun DesktopRenamePlaylistDialog(
     val submit = { if (name.isNotBlank() && name.trim() != current && !busy) onRename(name.trim()) }
 
     DesktopDialogFrame(onDismiss = onDismiss) {
-        DialogHeading("Rename playlist", current)
+        DialogHeading(DesktopStrings["rename_playlist", "Rename playlist"], current)
         error?.let { DialogError(it) }
         Box(
             Modifier
@@ -329,9 +329,12 @@ internal fun DesktopDeletePlaylistDialog(
 ) {
     DesktopDialogFrame(onDismiss = onDismiss) {
         DialogHeading(
-            "Delete playlist",
-            "“$title” will be removed from your YouTube Music account, on every " +
-                "device. The songs in it are not deleted.",
+            DesktopStrings["delete_playlist", "Delete playlist"],
+            DesktopStrings.format(
+                "d_delete_account_playlist_body",
+                title,
+                fallback = "“%1\$s” will be removed from your YouTube Music account, on every device. The songs in it are not deleted.",
+            ),
         )
         error?.let { DialogError(it) }
         DialogButtons(
@@ -363,7 +366,7 @@ internal fun DesktopReorderPlaylistDialog(
     val entries by produceState<UiState<List<Song>>>(UiState.Loading, browseId) {
         value = DesktopSearchClient.playlistEntries(browseId).fold(
             onSuccess = { UiState.Success(it) },
-            onFailure = { UiState.Error(it.message ?: "Could not load the playlist") },
+            onFailure = { UiState.Error(it.message ?: DesktopStrings["d_could_not_load_the_playlist", "Could not load the playlist"]) },
         )
     }
     // Null until a row has been dragged: an untouched list has nothing to send.

@@ -156,7 +156,7 @@ internal object DesktopSourceRegistry {
     private fun DesktopSourceConfig.descriptor() = DesktopSourceDescriptor(
         id = id,
         name = displayName,
-        detail = if (kind.needsServer && baseUrl.isBlank()) "Setup required" else kind.detail,
+        detail = if (kind.needsServer && baseUrl.isBlank()) DesktopStrings["d_setup_required", "Setup required"] else kind.detail,
         kind = kind,
         configured = isComplete,
         enabled = enabled,
@@ -231,7 +231,12 @@ internal object DesktopSourceRegistry {
         val heldBack = addonReference != null && owned == null &&
             configs().any { it.id == addonReference.sourceId && it.enabled && it.isComplete }
         if (!heldBack && (addonReference != null || moduleReference != null || song.videoId.startsWith("jiosaavn:"))) {
-            if (owned == null) error("The source for this track is disabled or no longer configured")
+            if (owned == null) error(
+                DesktopStrings[
+                    "d_the_source_for_this_track_is_disabled_or_no_longer_conf",
+                    "The source for this track is disabled or no longer configured",
+                ],
+            )
             // This path has nothing to race.
             DesktopTrackLog.log(
                 "resolving '${song.title}' — this row belongs to ${owned.descriptor.name}" +
@@ -267,7 +272,7 @@ internal object DesktopSourceRegistry {
                         return@runCatching it
                     }
             }
-            error("${owned.descriptor.name} did not return an audio stream")
+            error(DesktopStrings.format("d_source_did_not_return_an_audio_stream", owned.descriptor.name, fallback = "%1\$s did not return an audio stream"))
         }
 
         // A normal YouTube row is offered to every higher-priority source first so a configured
@@ -288,15 +293,19 @@ internal object DesktopSourceRegistry {
             // YouTube is the non-removable fallback and is force-enabled on read.
             ?: error(
                 if (excludedSourceId != null) {
-                    "No other source has a copy of this track"
+                    DesktopStrings["d_no_other_source_has_a_copy_of_this_track", "No other source has a copy of this track"]
                 } else {
-                    "No enabled music source is configured"
+                    DesktopStrings["d_no_enabled_music_source_is_configured", "No enabled music source is configured"]
                 },
             )
         // A held-back addon row carries that addon's id, which means nothing to YouTube.
-        val target = if (heldBack) youtube.match(song) ?: error("No other source has a copy of this track") else song
+        val target = if (heldBack) youtube.match(song) ?: error(DesktopStrings["d_no_other_source_has_a_copy_of_this_track", "No other source has a copy of this track"]) else song
         youtube.resolve(target, quality).fold(
-            onSuccess = { it ?: error("${youtube.descriptor.name} did not return an audio stream") },
+            onSuccess = {
+                it ?: error(
+                    DesktopStrings.format("d_source_did_not_return_an_audio_stream", youtube.descriptor.name, fallback = "%1\$s did not return an audio stream"),
+                )
+            },
             onFailure = { throw it },
         )
     }
@@ -372,7 +381,7 @@ internal object DesktopSourceRegistry {
 
         val youtubeStream = fallback.await()
             ?: lookup.await()
-            ?: error("No enabled music source could play this track")
+            ?: error(DesktopStrings["d_no_enabled_music_source_could_play_this_track", "No enabled music source could play this track"])
         // Still running means it lost the race rather than ran out of answers.
         val pending = lookup.takeIf { it.isActive }
         if (pending != null) {

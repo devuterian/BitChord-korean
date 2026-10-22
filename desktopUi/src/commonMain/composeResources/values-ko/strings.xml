@@ -212,4 +212,6 @@
     <string name="songs">곡</string>
     <string name="search_filter_all">전체</string>
     <string name="search_filter_videos">동영상</string>
+    <string name="search_top_result">상위 검색결과</string>
+    <string name="search_section_more">기타</string>
 </resources>

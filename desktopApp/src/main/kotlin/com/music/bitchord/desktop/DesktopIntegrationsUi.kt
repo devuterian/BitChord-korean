@@ -95,7 +95,7 @@ internal fun DesktopLastfmLoginDialog(onDismiss: () -> Unit) {
         scope.launch {
             DesktopScrobbling.signInToLastFm(username.trim(), password)
                 .onSuccess { onDismiss() }
-                .onFailure { error = it.message ?: "Last.fm would not sign you in" }
+                .onFailure { error = it.message ?: DesktopStrings["d_last_fm_would_not_sign_you_in", "Last.fm would not sign you in"] }
             busy = false
         }
     }
@@ -105,10 +105,9 @@ internal fun DesktopLastfmLoginDialog(onDismiss: () -> Unit) {
             title = DesktopStrings["d_sign_in_to_last_fm", "Sign in to Last.fm"],
             message = error
                 ?: if (needsAppKey) {
-                    "Your password is sent to Last.fm once and never stored. The API key " +
-                        "and shared secret are your app's, from last.fm/api."
+                    DesktopStrings["d_your_password_is_sent_to_last_fm_once_api_key", "Your password is sent to Last.fm once and never stored. The API key and shared secret are your app's, from last.fm/api."]
                 } else {
-                    "Your password is sent to Last.fm once and never stored."
+                    DesktopStrings["d_your_password_is_sent_to_last_fm_once_and_never_stored", "Your password is sent to Last.fm once and never stored."]
                 },
             isError = error != null,
         )
@@ -164,7 +163,7 @@ internal fun DesktopLastfmLoginDialog(onDismiss: () -> Unit) {
             }
         }
         DialogActions(
-            confirm = if (busy) "Signing in…" else "Sign in",
+            confirm = if (busy) DesktopStrings["signing_in", "Signing in…"] else DesktopStrings["sign_in", "Sign in"],
             confirmEnabled = !busy && ready,
             busy = busy,
             onConfirm = ::submit,
@@ -558,7 +557,7 @@ internal fun DesktopDiscordTokenDialog(onDismiss: () -> Unit) {
         scope.launch {
             DesktopDiscordRpc.signIn(token.trim())
                 .onSuccess { onDismiss() }
-                .onFailure { error = "Discord would not accept that token" }
+                .onFailure { error = DesktopStrings["discord_token_rejected", "Discord rejected that token."] }
             busy = false
         }
     }
@@ -567,8 +566,7 @@ internal fun DesktopDiscordTokenDialog(onDismiss: () -> Unit) {
         DialogHeading(
             title = DesktopStrings["discord_token", "Discord token"],
             message = error
-                ?: "Your account's own token, since Discord has no other way to let " +
-                "an app set your presence.",
+                ?: DesktopStrings["d_your_accounts_own_token_since_discord_has_no_other_way", "Your account's own token, since Discord has no other way to let an app set your presence."],
             isError = error != null,
         )
         DialogField(
@@ -581,7 +579,7 @@ internal fun DesktopDiscordTokenDialog(onDismiss: () -> Unit) {
             modifier = Modifier.focusRequester(focus),
         )
         DialogActions(
-            confirm = if (busy) "Checking…" else "Save",
+            confirm = if (busy) DesktopStrings["checking", "Checking…"] else DesktopStrings["save", "Save"],
             confirmEnabled = !busy && token.isNotBlank(),
             busy = busy,
             onConfirm = ::save,

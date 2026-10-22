@@ -15,10 +15,13 @@ internal enum class DesktopSourceKind(
 ) {
     /** An addon server the user pointed at themselves. */
     ADDON(
-        label = "Addon",
-        detail = "An addon server you host or were given a link to. Searched and streamed over " +
-            "plain HTTP — no code is downloaded or run.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res"),
+        label = DesktopStrings["source_kind_addon", "Addon"],
+        detail = DesktopStrings[
+            "d_source_kind_addon_detail",
+            "An addon server you host or were given a link to. Searched and streamed over " +
+                "plain HTTP — no code is downloaded or run.",
+        ],
+        labels = listOf("FLAC", DesktopStrings["lossless", "Lossless"], DesktopStrings["source_label_hires", "Hi-Res"]),
         needsServer = true,
         supportsLossless = true,
         rank = 0,
@@ -27,8 +30,13 @@ internal enum class DesktopSourceKind(
     /** A module index the user pointed at themselves. */
     CUSTOM_MODULE(
         label = DesktopStrings["d_custom_module", "Custom module"],
-        detail = "Your own compatible module index. Tried before the built-in one.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
+        detail = DesktopStrings["d_source_kind_custom_module_detail", "Your own compatible module index. Tried before the built-in one."],
+        labels = listOf(
+            "FLAC",
+            DesktopStrings["lossless", "Lossless"],
+            DesktopStrings["source_label_hires", "Hi-Res"],
+            DesktopStrings["source_label_plugins", "Plugins"],
+        ),
         needsServer = true,
         supportsLossless = true,
         rank = 0,
@@ -37,24 +45,33 @@ internal enum class DesktopSourceKind(
     /** A module index seeded from a build-time URL. */
     MODULE(
         label = DesktopStrings["d_module_source", "Module source"],
-        detail = "JavaScript modules for FLAC, lossless, Hi-Res and more.",
-        labels = listOf("FLAC", "Lossless", "Hi-Res", "Plugins"),
+        detail = DesktopStrings["d_source_kind_module_detail", "JavaScript modules for FLAC, lossless, Hi-Res and more."],
+        labels = listOf(
+            "FLAC",
+            DesktopStrings["lossless", "Lossless"],
+            DesktopStrings["source_label_hires", "Hi-Res"],
+            DesktopStrings["source_label_plugins", "Plugins"],
+        ),
         needsServer = true,
         supportsLossless = true,
         rank = 1,
     ),
     JIOSAAVN(
         label = "JioSaavn",
-        detail = "High Quality · 320kbps",
-        labels = listOf("High Quality", "320kbps"),
+        detail = DesktopStrings["d_source_kind_jiosaavn_detail", "High Quality · 320kbps"],
+        labels = listOf(DesktopStrings["source_label_high_quality", "High Quality"], "320kbps"),
         needsServer = false,
         supportsLossless = false,
         rank = 2,
     ),
     YOUTUBE(
         label = "YouTube Music",
-        detail = "Lossy · Full catalogue · Radio",
-        labels = listOf("Lossy", "Full catalogue", "Radio"),
+        detail = DesktopStrings["d_source_kind_youtube_detail", "Lossy · Full catalogue · Radio"],
+        labels = listOf(
+            DesktopStrings["source_label_lossy", "Lossy"],
+            DesktopStrings["source_label_full_catalogue", "Full catalogue"],
+            DesktopStrings["source_label_radio", "Radio"],
+        ),
         needsServer = false,
         supportsLossless = false,
         rank = 3,
@@ -68,10 +85,14 @@ internal enum class DesktopAudioQuality(
     val label: String,
     val detail: String,
 ) {
-    LOW(64, "Low", "~64 kbps · smallest download"),
-    MEDIUM(Int.MAX_VALUE, "Medium", "Best available · ~171 kbps Opus"),
-    HIGH(Int.MAX_VALUE, "High", "JioSaavn up to 320kbps, YouTube fallback"),
-    LOSSLESS(Int.MAX_VALUE, "Lossless", "Your addons + JioSaavn, bit-exact where available"),
+    LOW(64, DesktopStrings["low", "Low"], DesktopStrings["audio_quality_low_detail", "~64 kbps · smallest download"]),
+    MEDIUM(Int.MAX_VALUE, DesktopStrings["medium", "Medium"], DesktopStrings["audio_quality_medium_detail", "Best available · ~171 kbps Opus"]),
+    HIGH(Int.MAX_VALUE, DesktopStrings["high", "High"], DesktopStrings["audio_quality_high_detail", "JioSaavn up to 320kbps, YouTube fallback"]),
+    LOSSLESS(
+        Int.MAX_VALUE,
+        DesktopStrings["lossless", "Lossless"],
+        DesktopStrings["audio_quality_lossless_detail", "Your addons + JioSaavn, bit-exact where available"],
+    ),
     ;
 
     /** Whether a stream started under this ceiling may be served by [kind]. */

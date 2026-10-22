@@ -212,4 +212,6 @@
     <string name="songs">Songs</string>
     <string name="search_filter_all">All</string>
     <string name="search_filter_videos">Videos</string>
+    <string name="search_top_result">Top result</string>
+    <string name="search_section_more">More</string>
 </resources>

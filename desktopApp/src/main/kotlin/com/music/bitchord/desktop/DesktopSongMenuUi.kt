@@ -339,12 +339,12 @@ internal fun DesktopSongMenu(
             return@DesktopMenuSurface
         }
         if (pickingSleepTimer) {
-            DesktopMenuHeader("Sleep timer") { pickingSleepTimer = false }
+            DesktopMenuHeader(DesktopStrings["sleep_timer", "Sleep timer"]) { pickingSleepTimer = false }
             DesktopMenuDivider()
             DesktopSleepTimer.presets.forEach { minutes ->
                 DesktopMenuRow(
                     icon = Icons.Rounded.Bedtime,
-                    label = "$minutes minutes",
+                    label = DesktopStrings.format("d_n_minutes", minutes, fallback = "%1\$d minutes"),
                     selected = sleepTimerMinutes == minutes && !sleepAfterTrack,
                 ) { onSleepTimer(minutes) }
             }
@@ -365,7 +365,7 @@ internal fun DesktopSongMenu(
         (onRevertToOriginal ?: onUpgradeQuality)?.let { action ->
             DesktopMenuRow(
                 icon = if (onRevertToOriginal != null) Icons.AutoMirrored.Rounded.Undo else Icons.Rounded.HighQuality,
-                label = if (onRevertToOriginal != null) "Revert to original" else "Upgrade quality",
+                label = if (onRevertToOriginal != null) DesktopStrings["revert_to_original", "Revert to original"] else DesktopStrings["upgrade_quality", "Upgrade quality"],
                 onClick = action,
             )
             DesktopMenuDivider()
@@ -374,13 +374,13 @@ internal fun DesktopSongMenu(
         if (signedIn && !isOffline) {
             DesktopMenuRow(
                 icon = if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart,
-                label = if (liked) "Remove from liked" else "Like",
+                label = if (liked) DesktopStrings["remove_from_liked", "Remove from liked"] else DesktopStrings["like", "Like"],
                 tint = if (liked) DesktopAccent else null,
                 onClick = onToggleLike,
             )
             DesktopMenuRow(
                 icon = if (disliked) Icons.Rounded.ThumbDown else Icons.Rounded.ThumbDownOffAlt,
-                label = if (disliked) "Undo dislike" else "Dislike",
+                label = if (disliked) DesktopStrings["undo_dislike", "Undo dislike"] else DesktopStrings["dislike", "Dislike"],
                 tint = if (disliked) DesktopAccent else null,
                 onClick = onToggleDislike,
             )
@@ -484,8 +484,8 @@ internal fun DesktopSongMenu(
 }
 
 private fun sleepTimerLabel(minutes: Int?, afterTrack: Boolean): String = when {
-    afterTrack -> "End of track"
-    minutes != null -> "$minutes min"
+    afterTrack -> DesktopStrings["d_end_of_track", "End of track"]
+    minutes != null -> DesktopStrings.format("minutes_short", minutes, fallback = "%1\$d min")
     else -> ""
 }
 

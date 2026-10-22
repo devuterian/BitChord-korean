@@ -125,7 +125,7 @@ internal fun DesktopWindowButtons(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MacCaptionButton("Close", MAC_CLOSE, onClick = actions.close, inactiveFill = inactiveFill) { glyph ->
+        MacCaptionButton(DesktopStrings["close", "Close"], MAC_CLOSE, onClick = actions.close, inactiveFill = inactiveFill) { glyph ->
             val reach = GLYPH_HALF.toPx()
             val line = HAIRLINE.toPx()
             drawLine(
@@ -143,7 +143,7 @@ internal fun DesktopWindowButtons(modifier: Modifier = Modifier) {
                 cap = StrokeCap.Round,
             )
         }
-        MacCaptionButton("Minimize", MAC_MINIMIZE, onClick = actions.minimize, inactiveFill = inactiveFill) { glyph ->
+        MacCaptionButton(DesktopStrings["d_minimize", "Minimize"], MAC_MINIMIZE, onClick = actions.minimize, inactiveFill = inactiveFill) { glyph ->
             drawLine(
                 color = glyph,
                 start = Offset(center.x - GLYPH_HALF.toPx(), center.y),
@@ -153,7 +153,7 @@ internal fun DesktopWindowButtons(modifier: Modifier = Modifier) {
             )
         }
         MacCaptionButton(
-            if (maximized) "Restore" else "Maximize",
+            if (maximized) DesktopStrings["d_restore", "Restore"] else DesktopStrings["d_maximize", "Maximize"],
             MAC_MAXIMIZE,
             onClick = actions.toggleMaximize,
             inactiveFill = inactiveFill,
