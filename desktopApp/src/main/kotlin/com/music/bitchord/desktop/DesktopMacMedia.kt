@@ -67,10 +67,19 @@ internal object DesktopMacMedia {
         runCatching { nativeStop() }
     }
 
-    /** Publishes the current track. Called on every change Control Center would show. */
-    fun publish(state: DesktopPlaybackState) {
+    /**
+     * Publishes the current track. Called on every change Control Center would show, seeks
+     * included: it runs the position on from here at [speed] by itself.
+     */
+    fun publish(state: DesktopPlaybackState, speed: Float) {
         if (!started.get()) return
         val song = state.song
+        // The position was read off the sink a moment ago; carry it to now.
+        val sinceSampledMs = if (state.isPlaying && state.positionSampledAtNanos > 0L) {
+            ((System.nanoTime() - state.positionSampledAtNanos) / 1_000_000L * speed).toLong().coerceAtLeast(0L)
+        } else {
+            0L
+        }
         runCatching {
             nativeUpdate(
                 song?.title.orEmpty(),
@@ -78,7 +87,8 @@ internal object DesktopMacMedia {
                 song?.albumName.orEmpty(),
                 song?.thumbnailUrl.orEmpty(),
                 state.isPlaying,
-                state.positionMs,
+                speed.toDouble(),
+                state.positionMs + sinceSampledMs,
                 state.durationMs,
             )
         }
@@ -112,6 +122,7 @@ internal object DesktopMacMedia {
         album: String,
         artUrl: String,
         isPlaying: Boolean,
+        rate: Double,
         positionMs: Long,
         durationMs: Long,
     )

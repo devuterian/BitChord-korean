@@ -62,21 +62,33 @@ void send_button(jint button) {
     JNIEnv* env = attach();
     if (env == nullptr || g_type == nullptr || g_on_button == nullptr) return;
     env->CallStaticVoidMethod(g_type, g_on_button, button);
-    if (env->ExceptionCheck()) env->ExceptionClear();
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
 }
 
 void send_seek(jlong position_ms) {
     JNIEnv* env = attach();
     if (env == nullptr || g_type == nullptr || g_on_seek == nullptr) return;
     env->CallStaticVoidMethod(g_type, g_on_seek, position_ms);
-    if (env->ExceptionCheck()) env->ExceptionClear();
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
 }
 
+// Read as UTF-16 rather than through GetStringUTFChars: that is JNI's modified
+// UTF-8, which NSString refuses for anything outside the BMP, so a title with
+// an emoji in it came out empty.
 NSString* to_ns(JNIEnv* env, jstring value) {
     if (value == nullptr) return @"";
-    const char* chars = env->GetStringUTFChars(value, nullptr);
-    NSString* result = chars != nullptr ? [NSString stringWithUTF8String:chars] : @"";
-    if (chars != nullptr) env->ReleaseStringUTFChars(value, chars);
+    jsize length = env->GetStringLength(value);
+    const jchar* chars = env->GetStringChars(value, nullptr);
+    if (chars == nullptr) return @"";
+    NSString* result = [NSString stringWithCharacters:reinterpret_cast<const unichar*>(chars)
+                                               length:static_cast<NSUInteger>(length)];
+    env->ReleaseStringChars(value, chars);
     return result ?: @"";
 }
 
@@ -209,8 +221,9 @@ Java_com_music_bitchord_desktop_DesktopMacMedia_nativeStart(JNIEnv* env, jobject
         env->DeleteLocalRef(type);
         return JNI_FALSE;
     }
-    if (g_type != nullptr) env->DeleteGlobalRef(g_type);
-    g_type = static_cast<jclass>(env->NewGlobalRef(type));
+    // Made once and kept: it is the same class every time, and a callback still
+    // running from before a stop that timed out may be using it.
+    if (g_type == nullptr) g_type = static_cast<jclass>(env->NewGlobalRef(type));
     env->DeleteLocalRef(type);
     dispatch_async(dispatch_get_main_queue(), ^{ start_on_main(); });
     return JNI_TRUE;
@@ -225,54 +238,61 @@ Java_com_music_bitchord_desktop_DesktopMacMedia_nativeStop(JNIEnv*, jobject) {
         stop_on_main();
         return;
     }
-    dispatch_semaphore_t done = dispatch_semaphore_create(0);
-    dispatch_async(dispatch_get_main_queue(), ^{
-        stop_on_main();
-        dispatch_semaphore_signal(done);
-    });
-    dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC));
+    @autoreleasepool {
+        dispatch_semaphore_t done = dispatch_semaphore_create(0);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            stop_on_main();
+            dispatch_semaphore_signal(done);
+        });
+        dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC));
+    }
 }
 
 JNIEXPORT void JNICALL
 Java_com_music_bitchord_desktop_DesktopMacMedia_nativeUpdate(
     JNIEnv* env, jobject, jstring title, jstring artist, jstring album, jstring art_url,
-    jboolean is_playing, jlong position_ms, jlong duration_ms) {
-    NSString* ns_title = to_ns(env, title);
-    NSString* ns_artist = to_ns(env, artist);
-    NSString* ns_album = to_ns(env, album);
-    NSString* ns_art = to_ns(env, art_url);
-    BOOL playing = is_playing == JNI_TRUE;
-    double position = static_cast<double>(position_ms) / 1000.0;
-    double duration = static_cast<double>(duration_ms) / 1000.0;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (g_targets == nil) return;
-        MPNowPlayingInfoCenter* info = [MPNowPlayingInfoCenter defaultCenter];
-        if (ns_title.length == 0) {
-            g_generation++;
-            g_art_url = nil;
-            g_artwork = nil;
-            info.nowPlayingInfo = nil;
-            info.playbackState = MPNowPlayingPlaybackStateStopped;
-            return;
-        }
-        if (![ns_art isEqualToString:g_art_url ?: @""]) {
-            g_generation++;
-            g_art_url = ns_art;
-            g_artwork = nil;
-            if (ns_art.length > 0) fetch_artwork(ns_art, g_generation);
-        }
-        NSMutableDictionary* now = [NSMutableDictionary dictionary];
-        now[MPMediaItemPropertyTitle] = ns_title;
-        now[MPMediaItemPropertyArtist] = ns_artist;
-        now[MPMediaItemPropertyAlbumTitle] = ns_album;
-        now[MPNowPlayingInfoPropertyMediaType] = @(MPNowPlayingInfoMediaTypeAudio);
-        now[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(position);
-        now[MPNowPlayingInfoPropertyPlaybackRate] = @(playing ? 1.0 : 0.0);
-        if (duration > 0) now[MPMediaItemPropertyPlaybackDuration] = @(duration);
-        if (g_artwork != nil) now[MPMediaItemPropertyArtwork] = g_artwork;
-        info.nowPlayingInfo = now;
-        info.playbackState = playing ? MPNowPlayingPlaybackStatePlaying : MPNowPlayingPlaybackStatePaused;
-    });
+    jboolean is_playing, jdouble rate, jlong position_ms, jlong duration_ms) {
+    // JVM threads have no pool of their own, and the EDT never exits to drain one.
+    @autoreleasepool {
+        NSString* ns_title = to_ns(env, title);
+        NSString* ns_artist = to_ns(env, artist);
+        NSString* ns_album = to_ns(env, album);
+        NSString* ns_art = to_ns(env, art_url);
+        BOOL playing = is_playing == JNI_TRUE;
+        double position = static_cast<double>(position_ms) / 1000.0;
+        double duration = static_cast<double>(duration_ms) / 1000.0;
+        double speed = rate > 0 ? static_cast<double>(rate) : 1.0;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (g_targets == nil) return;
+            MPNowPlayingInfoCenter* info = [MPNowPlayingInfoCenter defaultCenter];
+            if (ns_title.length == 0) {
+                g_generation++;
+                g_art_url = nil;
+                g_artwork = nil;
+                info.nowPlayingInfo = nil;
+                info.playbackState = MPNowPlayingPlaybackStateStopped;
+                return;
+            }
+            if (![ns_art isEqualToString:g_art_url ?: @""]) {
+                g_generation++;
+                g_art_url = ns_art;
+                g_artwork = nil;
+                if (ns_art.length > 0) fetch_artwork(ns_art, g_generation);
+            }
+            NSMutableDictionary* now = [NSMutableDictionary dictionary];
+            now[MPMediaItemPropertyTitle] = ns_title;
+            now[MPMediaItemPropertyArtist] = ns_artist;
+            now[MPMediaItemPropertyAlbumTitle] = ns_album;
+            now[MPNowPlayingInfoPropertyMediaType] = @(MPNowPlayingInfoMediaTypeAudio);
+            now[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(position);
+            now[MPNowPlayingInfoPropertyPlaybackRate] = @(playing ? speed : 0.0);
+            now[MPNowPlayingInfoPropertyDefaultPlaybackRate] = @(speed);
+            if (duration > 0) now[MPMediaItemPropertyPlaybackDuration] = @(duration);
+            if (g_artwork != nil) now[MPMediaItemPropertyArtwork] = g_artwork;
+            info.nowPlayingInfo = now;
+            info.playbackState = playing ? MPNowPlayingPlaybackStatePlaying : MPNowPlayingPlaybackStatePaused;
+        });
+    }
 }
 
 }  // extern "C"
