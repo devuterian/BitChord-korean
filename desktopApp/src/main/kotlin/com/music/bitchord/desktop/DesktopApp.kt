@@ -2033,7 +2033,11 @@ fun BitChordDesktopApp() {
     LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
         DesktopScrobbling.onPlaybackStateChanged(playback)
         DesktopWindowsMedia.publish(playback)
-        DesktopMacMedia.publish(playback)
+    }
+    // Control Center counts the position on by itself from what it was last told, so a seek or a
+    // speed change has to be told too or its scrubber runs on from the old place.
+    LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs, playback.seeks, playbackSpeed) {
+        DesktopMacMedia.publish(playback, playbackSpeed)
     }
     // Refetched on opening the page rather than cached for the session: the
     // point of it is that something played elsewhere shows up here.
