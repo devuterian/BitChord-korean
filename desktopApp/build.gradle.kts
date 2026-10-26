@@ -538,6 +538,8 @@ compose.desktop {
             description = if (targetOs == "windows") "BitChord" else "Aesthetic YouTube Music client"
             vendor = "BitChord contributors"
             copyright = "Copyright © 2026 BitChord contributors"
+            // Ends up in Contents/app/resources; the macOS AppleScript dictionary is read from there.
+            appResourcesRootDir.set(project.layout.projectDirectory.dir("packaging/resources"))
 
             modules(
                 "java.base",
@@ -574,6 +576,10 @@ compose.desktop {
                     extraKeysRawXml = """
                         <key>NSRequiresAquaSystemAppearance</key>
                         <false/>
+                        <key>NSAppleScriptEnabled</key>
+                        <true/>
+                        <key>OSAScriptingDefinition</key>
+                        <string>../app/resources/BitChord.sdef</string>
                         <key>CFBundleAllowMixedLocalizations</key>
                         <true/>
                         <key>CFBundleLocalizations</key>

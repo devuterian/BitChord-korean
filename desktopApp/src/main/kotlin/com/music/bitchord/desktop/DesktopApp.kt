@@ -1758,6 +1758,27 @@ fun BitChordDesktopApp() {
         )
         onDispose { DesktopWindowsMedia.stop() }
     }
+    // And the macOS one: Control Center, the media keys, and the AppleScript
+    // commands media key routers use to reach this app in particular.
+    DisposableEffect(playbackEngine) {
+        DesktopMacMedia.start(
+            DesktopMacMedia.Controller(
+                onPlay = ::playFromUser,
+                onPause = ::pauseFromUser,
+                onPlayPause = ::togglePlayPauseFromUser,
+                onNext = ::playNext,
+                onPrevious = ::playPrevious,
+                onStop = ::pauseFromUser,
+                onSeek = { positionMs ->
+                    if (!DesktopListenTogether.state.value.controlsLocked) {
+                        playbackEngine.seekTo(positionMs)
+                        partySync.onLocalIntent()
+                    }
+                },
+            ),
+        )
+        onDispose { DesktopMacMedia.stop() }
+    }
 
     LaunchedEffect(playbackSpeed) { playbackEngine.setPlaybackSpeed(playbackSpeed) }
     LaunchedEffect(volume) { playbackEngine.setVolume(volume) }
@@ -2012,6 +2033,7 @@ fun BitChordDesktopApp() {
     LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
         DesktopScrobbling.onPlaybackStateChanged(playback)
         DesktopWindowsMedia.publish(playback)
+        DesktopMacMedia.publish(playback)
     }
     // Refetched on opening the page rather than cached for the session: the
     // point of it is that something played elsewhere shows up here.
@@ -2604,6 +2626,7 @@ fun BitChordDesktopApp() {
                 // WASAPI and WinRT, and exitProcess would unload those libraries under them.
                 playbackEngine.shutdown()
                 DesktopWindowsMedia.stop()
+                DesktopMacMedia.stop()
                 exitProcess(0)
             },
         )
