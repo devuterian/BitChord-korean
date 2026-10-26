@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<!--
+  The app's AppleScript commands, answered by libbitchord_nowplaying.dylib.
+  The codes are shared with nowplaying_jni.mm.
+-->
+<dictionary title="BitChord Terminology">
+    <suite name="BitChord Suite" code="BtCd" description="Playback control.">
+        <command name="playpause" code="BtCdPlPs" description="Toggle play and pause."/>
+        <command name="play" code="BtCdPlay" description="Resume playback."/>
+        <command name="pause" code="BtCdPaus" description="Pause playback."/>
+        <command name="next track" code="BtCdNext" description="Skip to the next track."/>
+        <command name="previous track" code="BtCdPrev" description="Go back to the previous track."/>
+    </suite>
+</dictionary>
