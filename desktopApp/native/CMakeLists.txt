@@ -131,3 +131,20 @@ elseif(MSVC)
     # The WinRT umbrella import library.
     target_link_libraries(bitchord_smtc PRIVATE windowsapp gdi32)
 endif()
+
+# macOS Now Playing and the app's AppleScript commands, which are Objective-C.
+if(APPLE)
+    enable_language(OBJCXX)
+    add_library(bitchord_nowplaying SHARED ${CMAKE_CURRENT_SOURCE_DIR}/nowplaying/nowplaying_jni.mm)
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/nowplaying/nowplaying_jni.mm
+        PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    if(DEFINED ENV{JAVA_HOME})
+        target_include_directories(bitchord_nowplaying PRIVATE $ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/darwin)
+    else()
+        find_package(JNI REQUIRED)
+        target_include_directories(bitchord_nowplaying PRIVATE ${JNI_INCLUDE_DIRS})
+    endif()
+    target_compile_options(bitchord_nowplaying PRIVATE -O2)
+    target_link_libraries(bitchord_nowplaying PRIVATE
+        "-framework AppKit" "-framework Foundation" "-framework MediaPlayer")
+endif()

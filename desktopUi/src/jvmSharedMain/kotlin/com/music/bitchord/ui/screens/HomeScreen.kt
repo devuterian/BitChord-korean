@@ -606,6 +606,8 @@ internal fun localizeShelfTitle(title: String): String {
             trimmed.equals("Danh sách phát nổi bật dành cho bạn", ignoreCase = true) ||
             trimmed.equals("おすすめの再生リスト", ignoreCase = true) ->
             stringResource(Res.string.shelf_featured_playlists_for_you)
+        trimmed.equals("Melon Top 100", ignoreCase = true) -> stringResource(Res.string.shelf_melon_top_100)
+        trimmed.equals("Circle Chart weekly", ignoreCase = true) -> stringResource(Res.string.shelf_circle_chart_weekly)
         trimmed.equals("Quick picks", ignoreCase = true) ||
             trimmed.equals("Lựa chọn nhanh", ignoreCase = true) ||
             trimmed.equals("Chọn nhanh đài phát", ignoreCase = true) ||

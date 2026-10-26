@@ -3,6 +3,7 @@ package com.music.bitchord.ui.screens
 import com.music.bitchord.ui.components.contextClick
 import androidx.compose.ui.unit.Dp
 import com.music.bitchord.sharedui.resources.*
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -323,9 +324,9 @@ fun SearchScreen(
                     }
                     searchSections(results.data, filter).forEach { section ->
                         section.title?.let { title ->
-                            item(key = "search-section:$title") {
+                            item(key = "search-section:${title.key}") {
                                 Text(
-                                    text = title,
+                                    text = stringResource(title),
                                     modifier = Modifier.padding(
                                         start = PAGE_GUTTER,
                                         end = PAGE_GUTTER,
@@ -389,17 +390,17 @@ fun SearchScreen(
     }
 }
 
-private data class SearchSection(val title: String?, val rows: List<SearchResult>)
+private data class SearchSection(val title: StringResource?, val rows: List<SearchResult>)
 
 /** The unfiltered page is useful only when its mixed result types are readable at a glance. */
 private fun searchSections(rows: List<SearchResult>, filter: SearchFilter): List<SearchSection> {
     if (filter != SearchFilter.ALL) return listOf(SearchSection(null, rows))
     return listOf(
-        SearchSection("Songs", rows.filterIsInstance<SearchResult.Track>()),
-        SearchSection("Artists", rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.ARTIST }),
-        SearchSection("Albums", rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.ALBUM }),
-        SearchSection("Playlists", rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.PLAYLIST }),
-        SearchSection("More", rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.OTHER }),
+        SearchSection(Res.string.songs, rows.filterIsInstance<SearchResult.Track>()),
+        SearchSection(Res.string.artists, rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.ARTIST }),
+        SearchSection(Res.string.albums, rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.ALBUM }),
+        SearchSection(Res.string.playlists, rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.PLAYLIST }),
+        SearchSection(Res.string.search_section_more, rows.filterIsInstance<SearchResult.Browse>().filter { it.item.type == BrowseType.OTHER }),
     ).filter { it.rows.isNotEmpty() }
 }
 
@@ -486,7 +487,7 @@ private fun TopResultCard(
             .contextClick(onLongPress),
     ) {
         Text(
-            text = "Top result",
+            text = stringResource(Res.string.search_top_result),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -1018,7 +1019,16 @@ private fun SearchFilterTabs(filter: SearchFilter, onFilterChange: (SearchFilter
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = entry.label,
+                    text = stringResource(
+                        when (entry) {
+                            SearchFilter.ALL -> Res.string.search_filter_all
+                            SearchFilter.SONGS -> Res.string.songs
+                            SearchFilter.VIDEOS -> Res.string.search_filter_videos
+                            SearchFilter.ALBUMS -> Res.string.albums
+                            SearchFilter.ARTISTS -> Res.string.artists
+                            SearchFilter.PLAYLISTS -> Res.string.playlists
+                        },
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = if (selected) MaterialTheme.colorScheme.background
                     else MaterialTheme.colorScheme.onBackground,

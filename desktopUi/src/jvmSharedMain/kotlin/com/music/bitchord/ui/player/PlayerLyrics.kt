@@ -120,6 +120,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -131,6 +132,7 @@ import com.music.bitchord.data.lyrics.isGeniusSectionHeader
 import com.music.bitchord.data.lyrics.GrowingWord
 import com.music.bitchord.data.lyrics.LyricAlignment
 import com.music.bitchord.data.lyrics.LyricLine
+import com.music.bitchord.data.lyrics.LyricWord
 import com.music.bitchord.data.lyrics.LyricsSource
 import com.music.bitchord.data.lyrics.translationLanguageName
 import com.music.bitchord.ui.haptics.Haptic
@@ -284,6 +286,12 @@ private val SUB_LYRIC_FONT_SIZE = 20.sp
 private val SUB_LYRIC_LINE_HEIGHT = 25.sp
 private val SUB_BACKING_FONT_SIZE = 16.sp
 private val SUB_BACKING_LINE_HEIGHT = 21.sp
+// The romanization sits between the original and the translation, so it is
+// the smaller of the two.
+private val SUB_ROMAN_FONT_SIZE = 16.sp
+private val SUB_ROMAN_LINE_HEIGHT = 21.sp
+private val SUB_ROMAN_BACKING_FONT_SIZE = 14.sp
+private val SUB_ROMAN_BACKING_LINE_HEIGHT = 18.sp
 private const val SUB_LYRIC_ALPHA = 0.85f
 private val SUB_LYRIC_TUCK = 6.dp
 private const val SUB_LYRIC_OPEN_MS = 460
@@ -536,8 +544,6 @@ internal sealed interface LyricsTranslationUiState {
     data class Ready(val lines: List<LyricLine>) : LyricsTranslationUiState
     data object SameLanguage : LyricsTranslationUiState
 }
-
-internal enum class LyricsDisplayMode { Original, Romanized, Translated }
 
 private const val TRANSLATION_MOTION_MS = 540
 private const val PARTICLES_PER_VOICE = 18
@@ -1793,10 +1799,12 @@ internal fun rememberPlayerControlsOnScroll(
 internal fun LyricsPanel(
     lines: List<LyricLine>,
     /**
-     * Romanized or translated copies of [lines], index for index, drawn small
-     * under each original line. Null shows the originals alone.
+     * Translated copy of [lines], index for index, drawn small under each
+     * original line (and under its romanization). Null shows none.
      */
     subLines: List<LyricLine>? = null,
+    /** Romanized copy of [lines], drawn directly under each original line. */
+    romanSubLines: List<LyricLine>? = null,
     trackKey: String,
     playhead: LyricPlayhead,
     /** Whether a lookup for this track is still in flight. */
@@ -1827,6 +1835,7 @@ internal fun LyricsPanel(
     val panelPlaying = isPlaying && active
     val clock = rememberLyricClock(trackKey, playhead, panelPlaying)
     val subReveal = rememberSubLyricsReveal(subLines, trackKey)
+    val romanReveal = rememberSubLyricsReveal(romanSubLines, trackKey)
 
     val isSynced = remember(lines) { lines.any { it.timeMs > 0L } }
     // Only a song that actually names a second voice is laid out as one. A
@@ -2385,11 +2394,31 @@ internal fun LyricsPanel(
                 // Lead and answering vocal are one row: they are one line of
                 // the song, they scale and dim together, and tapping either
                 // seeks to the same place.
-                val sub = subReveal.lines?.getOrNull(index)
                 val subStyle = style.copy(
                     fontSize = SUB_LYRIC_FONT_SIZE,
                     lineHeight = SUB_LYRIC_LINE_HEIGHT,
                     fontWeight = FontWeight.Bold,
+                )
+                val romanStyle = subStyle.copy(
+                    fontSize = SUB_ROMAN_FONT_SIZE,
+                    lineHeight = SUB_ROMAN_LINE_HEIGHT,
+                )
+                // Romanization first, then translation, each its own toggle.
+                val subVoices = listOf(
+                    SubVoice(
+                        line = romanReveal.lines?.getOrNull(index),
+                        reveal = romanReveal,
+                        style = romanStyle,
+                        backingFontSize = SUB_ROMAN_BACKING_FONT_SIZE,
+                        backingLineHeight = SUB_ROMAN_BACKING_LINE_HEIGHT,
+                    ),
+                    SubVoice(
+                        line = subReveal.lines?.getOrNull(index),
+                        reveal = subReveal,
+                        style = subStyle,
+                        backingFontSize = SUB_BACKING_FONT_SIZE,
+                        backingLineHeight = SUB_BACKING_LINE_HEIGHT,
+                    ),
                 )
                 // The answering voice is only on screen while it is being sung,
                 // the way Apple Music keeps it: it opens on its own clock, just
@@ -2452,11 +2481,12 @@ internal fun LyricsPanel(
                     )
                     // A line the service handed back unchanged ("falling
                     // down" in a Korean song) gets no second copy of itself.
-                    sub?.takeIf { it.text.differsFrom(line.text) }?.let { subLine ->
+                    subVoices.forEach { voice ->
+                    voice.line?.takeIf { it.text.differsFrom(line.text) }?.let { subLine ->
                         PanelVoice(
                             line = subLine,
                             clock = clock,
-                            style = voiceStyle(subStyle, subLine.text, alignEnd, duet),
+                            style = voiceStyle(voice.style, subLine.text, alignEnd, duet),
                             isActive = isActive,
                             sung = sung,
                             synced = isSynced,
@@ -2474,13 +2504,14 @@ internal fun LyricsPanel(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .revealBelow(subReveal.progress)
+                                .revealBelow(voice.reveal.progress)
                                 // Tucked up into the lead's glow inset so the
                                 // pair reads as one line in two scripts.
                                 .padding(start = GLOW_ROOM, end = GLOW_ROOM, bottom = GLOW_ROOM)
                                 .offset(y = -SUB_LYRIC_TUCK)
                                 .graphicsLayer { alpha = SUB_LYRIC_ALPHA },
                         )
+                    }
                     }
                     line.background?.let { backing ->
                         Column(
@@ -2516,15 +2547,16 @@ internal fun LyricsPanel(
                                     .padding(start = GLOW_ROOM, end = GLOW_ROOM, bottom = GLOW_ROOM)
                                     .graphicsLayer { alpha = BACKING_ALPHA },
                             )
-                            sub?.background
+                            subVoices.forEach { voice ->
+                            voice.line?.background
                                 ?.takeIf { it.text.differsFrom(backing.text) }
                                 ?.let { subBacking ->
                                     PanelVoice(
                                         line = subBacking.withoutBracketPunctuation(),
                                         clock = clock,
-                                        style = voiceStyle(subStyle.copy(
-                                            fontSize = SUB_BACKING_FONT_SIZE,
-                                            lineHeight = SUB_BACKING_LINE_HEIGHT,
+                                        style = voiceStyle(voice.style.copy(
+                                            fontSize = voice.backingFontSize,
+                                            lineHeight = voice.backingLineHeight,
                                         ), subBacking.text, alignEnd, duet),
                                         isActive = isActive,
                                         sung = sung,
@@ -2537,12 +2569,13 @@ internal fun LyricsPanel(
                                         rise = false,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .revealBelow(subReveal.progress)
+                                            .revealBelow(voice.reveal.progress)
                                             .padding(start = GLOW_ROOM, end = GLOW_ROOM, bottom = GLOW_ROOM)
                                             .offset(y = -SUB_LYRIC_TUCK)
                                             .graphicsLayer { alpha = BACKING_ALPHA * SUB_LYRIC_ALPHA },
                                     )
                                 }
+                            }
                         }
                     }
                 }
@@ -2551,6 +2584,52 @@ internal fun LyricsPanel(
         }
     }
     }
+}
+
+// Skia on the desktop has no word-break strategy (Android's LineBreak.WordBreak
+// is not there), so Korean breaks between any two syllables ("떠올/려"). A word
+// joiner between neighbouring syllables keeps each word whole; a word too long
+// for the line still breaks.
+private const val WORD_JOINER = '⁠'
+
+private fun isHangulSyllable(char: Char) = char in '가'..'힣'
+
+private fun String.hasJoinableHangul(): Boolean =
+    (1 until length).any { isHangulSyllable(this[it - 1]) && isHangulSyllable(this[it]) }
+
+/** This line with its Korean words joined; word spans follow because each word is joined the same way. */
+private fun LyricLine.withKoreanWordsJoined(): LyricLine {
+    if (!text.hasJoinableHangul()) return this
+    return copy(text = joinKorean(text).first, words = words.map { it.withKoreanWordsJoined() })
+}
+
+private fun LyricWord.withKoreanWordsJoined(): LyricWord {
+    if (!text.hasJoinableHangul()) return this
+    val (joined, moved) = joinKorean(text)
+    return copy(
+        text = joined,
+        syllables = syllables.map {
+            it.copy(
+                startChar = moved[it.startChar.coerceIn(0, text.length)],
+                endChar = moved[it.endChar.coerceIn(0, text.length)],
+            )
+        },
+    )
+}
+
+/** [text] with word joiners in, and where each old offset landed. */
+private fun joinKorean(text: String): Pair<String, IntArray> {
+    val moved = IntArray(text.length + 1)
+    val joined = StringBuilder(text.length * 2)
+    text.forEachIndexed { index, char ->
+        if (index > 0 && isHangulSyllable(text[index - 1]) && isHangulSyllable(char)) {
+            joined.append(WORD_JOINER)
+        }
+        moved[index] = joined.length
+        joined.append(char)
+    }
+    moved[text.length] = joined.length
+    return joined.toString() to moved
 }
 
 /**
@@ -2588,6 +2667,8 @@ private fun PanelVoice(
     rise: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    // Korean wraps between words, not mid-word ("떠올/려").
+    val line = remember(line) { line.withKoreanWordsJoined() }
     // The line being sung is white; every other one — sung or still to come —
     // takes the sleeve's tint, as the rest of the player's secondary text does
     // (see [LocalPlayerTint]). Faded across the handover rather than cut, so a
@@ -2683,6 +2764,15 @@ private fun PanelVoice(
  * (see [revealBelow]), so opening it costs a relayout of the rows on screen
  * and not one recomposition.
  */
+/** One extra line under a row: which copy it is, how it opens, how it is set. */
+private class SubVoice(
+    val line: LyricLine?,
+    val reveal: SubLyricsReveal,
+    val style: TextStyle,
+    val backingFontSize: TextUnit,
+    val backingLineHeight: TextUnit,
+)
+
 private class SubLyricsReveal(
     val progress: State<Float>,
     lines: State<List<LyricLine>?>,
@@ -3018,8 +3108,10 @@ private fun LyricsLoadingLine(text: String, modifier: Modifier = Modifier) {
 internal class LyricsTranslationUi(
     /** The lines the one-line strip reads: the originals, or their translation. */
     val displayedLyrics: List<LyricLine>,
-    /** Drawn small under each original line in the panel; null for none. */
+    /** The translation, drawn small under each original line in the panel; null for none. */
     val subLines: List<LyricLine>?,
+    /** The romanization, drawn small directly under each original line; null for none. */
+    val romanSubLines: List<LyricLine>?,
     val translationState: LyricsTranslationUiState,
     val romanizationState: LyricsTranslationUiState,
     val showingTranslation: Boolean,
@@ -3079,11 +3171,10 @@ internal fun rememberLyricsTranslation(
     var romanizationState by remember(trackId, translationLanguage, lyrics) {
         mutableStateOf<LyricsTranslationUiState>(LyricsTranslationUiState.Idle)
     }
-    var lyricsDisplayMode by remember(trackId, translationLanguage, lyrics) {
-        mutableStateOf(LyricsDisplayMode.Original)
-    }
-    val showingTranslation = lyricsDisplayMode == LyricsDisplayMode.Translated
-    val showingRomanization = lyricsDisplayMode == LyricsDisplayMode.Romanized
+    // Independent switches: the original, its romanization and its translation
+    // can all be on screen together.
+    var showingTranslation by remember(trackId, translationLanguage, lyrics) { mutableStateOf(false) }
+    var showingRomanization by remember(trackId, translationLanguage, lyrics) { mutableStateOf(false) }
     var translationTransition by remember(trackId) { mutableIntStateOf(0) }
     var translationJob by remember(trackId, translationLanguage, lyrics) {
         mutableStateOf<Job?>(null)
@@ -3097,31 +3188,25 @@ internal fun rememberLyricsTranslation(
             romanizationJob?.cancel()
         }
     }
-    val displayedLyrics = when (lyricsDisplayMode) {
-        LyricsDisplayMode.Translated ->
-            (translationState as? LyricsTranslationUiState.Ready)?.lines ?: lyrics.orEmpty()
-        LyricsDisplayMode.Romanized ->
-            (romanizationState as? LyricsTranslationUiState.Ready)?.lines ?: lyrics.orEmpty()
-        LyricsDisplayMode.Original -> lyrics.orEmpty()
+    val translatedLines = (translationState as? LyricsTranslationUiState.Ready)?.lines
+    val romanizedLines = (romanizationState as? LyricsTranslationUiState.Ready)?.lines
+    // The one-line strip has room for a single version: the translation when it
+    // is on, else the romanization.
+    val displayedLyrics = when {
+        showingTranslation && translatedLines != null -> translatedLines
+        showingRomanization && romanizedLines != null -> romanizedLines
+        else -> lyrics.orEmpty()
     }
     // What the panel draws in small type under each original line, Apple
     // Music style. The panel itself always keeps the original words; only the
-    // one-line strip over the scrubber swaps to [displayedLyrics]. One mode at
-    // a time by construction — [lyricsDisplayMode] holds a single value.
-    val lyricsSubLines = when (lyricsDisplayMode) {
-        LyricsDisplayMode.Translated -> (translationState as? LyricsTranslationUiState.Ready)?.lines
-        LyricsDisplayMode.Romanized -> (romanizationState as? LyricsTranslationUiState.Ready)?.lines
-        LyricsDisplayMode.Original -> null
-    }
+    // one-line strip over the scrubber swaps to [displayedLyrics].
+    val lyricsSubLines = translatedLines.takeIf { showingTranslation }
+    val lyricsRomanSubLines = romanizedLines.takeIf { showingRomanization }
     val translationScope = rememberCoroutineScope()
     val toggleTranslation: () -> Unit = toggleTranslation@{
         when (val state = translationState) {
             is LyricsTranslationUiState.Ready -> {
-                lyricsDisplayMode = if (showingTranslation) {
-                    LyricsDisplayMode.Original
-                } else {
-                    LyricsDisplayMode.Translated
-                }
+                showingTranslation = !showingTranslation
                 translationTransition++
                 haptics.play(Haptic.Select)
             }
@@ -3135,10 +3220,6 @@ internal fun rememberLyricsTranslation(
                 if (source.isEmpty()) return@toggleTranslation
                 haptics.play(Haptic.Tap)
                 translationState = LyricsTranslationUiState.Loading
-                romanizationJob?.cancel()
-                if (romanizationState is LyricsTranslationUiState.Loading) {
-                    romanizationState = LyricsTranslationUiState.Idle
-                }
                 translationJob?.cancel()
                 translationJob = translationScope.launch {
                     when (
@@ -3150,7 +3231,7 @@ internal fun rememberLyricsTranslation(
                     ) {
                         is LyricsTranslationResult.Translated -> {
                             translationState = LyricsTranslationUiState.Ready(result.lines)
-                            lyricsDisplayMode = LyricsDisplayMode.Translated
+                            showingTranslation = true
                             translationTransition++
                             haptics.play(Haptic.ToggleOn)
                         }
@@ -3170,11 +3251,7 @@ internal fun rememberLyricsTranslation(
     val toggleRomanization: () -> Unit = toggleRomanization@{
         when (val state = romanizationState) {
             is LyricsTranslationUiState.Ready -> {
-                lyricsDisplayMode = if (showingRomanization) {
-                    LyricsDisplayMode.Original
-                } else {
-                    LyricsDisplayMode.Romanized
-                }
+                showingRomanization = !showingRomanization
                 translationTransition++
                 haptics.play(Haptic.Select)
             }
@@ -3188,10 +3265,6 @@ internal fun rememberLyricsTranslation(
                 if (source.isEmpty()) return@toggleRomanization
                 haptics.play(Haptic.Tap)
                 romanizationState = LyricsTranslationUiState.Loading
-                translationJob?.cancel()
-                if (translationState is LyricsTranslationUiState.Loading) {
-                    translationState = LyricsTranslationUiState.Idle
-                }
                 romanizationJob?.cancel()
                 romanizationJob = translationScope.launch {
                     when (
@@ -3203,7 +3276,7 @@ internal fun rememberLyricsTranslation(
                     ) {
                         is LyricsRomanizationResult.Romanized -> {
                             romanizationState = LyricsTranslationUiState.Ready(result.lines)
-                            lyricsDisplayMode = LyricsDisplayMode.Romanized
+                            showingRomanization = true
                             translationTransition++
                             haptics.play(Haptic.ToggleOn)
                         }
@@ -3247,6 +3320,7 @@ internal fun rememberLyricsTranslation(
     return LyricsTranslationUi(
         displayedLyrics = displayedLyrics,
         subLines = lyricsSubLines,
+        romanSubLines = lyricsRomanSubLines,
         translationState = translationState,
         romanizationState = romanizationState,
         showingTranslation = showingTranslation,

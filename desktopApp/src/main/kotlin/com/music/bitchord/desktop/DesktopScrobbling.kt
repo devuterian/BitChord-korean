@@ -99,7 +99,7 @@ object DesktopScrobbling {
      * password is never stored.
      */
     suspend fun signInToLastFm(username: String, password: String): Result<String> = runCatching {
-        val key = apiKey ?: error("This build has no Last.fm API key")
+        val key = apiKey ?: error(DesktopStrings["d_this_build_has_no_last_fm_api_key", "This build has no Last.fm API key"])
         val values = linkedMapOf(
             "api_key" to key,
             "method" to "auth.getMobileSession",
@@ -109,10 +109,10 @@ object DesktopScrobbling {
         val body = postLastFm(values)
         val session = Json { ignoreUnknownKeys = true }
             .parseToJsonElement(body).jsonObject["session"]?.jsonObject
-            ?: error("Last.fm did not return a session")
+            ?: error(DesktopStrings["d_last_fm_did_not_return_a_session", "Last.fm did not return a session"])
         val name = session["name"]?.jsonPrimitive?.contentOrNull ?: username
         val sessionKey = session["key"]?.jsonPrimitive?.contentOrNull
-            ?: error("Last.fm did not return a session key")
+            ?: error(DesktopStrings["d_last_fm_did_not_return_a_session", "Last.fm did not return a session"])
         DesktopScrobbleSettings.signedInToLastfm(name, sessionKey)
         name
     }
@@ -252,7 +252,7 @@ object DesktopScrobbling {
             runCatching {
                 Json { ignoreUnknownKeys = true }
                     .parseToJsonElement(body).jsonObject["message"]?.jsonPrimitive?.contentOrNull
-            }.getOrNull() ?: "Last.fm returned HTTP ${response.status.value}"
+            }.getOrNull() ?: DesktopStrings.format("d_last_fm_returned_http", response.status.value, fallback = "Last.fm returned HTTP %1\$s")
         }
         return body
     }

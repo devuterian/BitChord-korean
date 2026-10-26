@@ -273,7 +273,7 @@ class DesktopPlaybackEngine(
                     _state.value = DesktopPlaybackState(
                         song = song,
                         volume = volume,
-                        error = reported.message ?: "Playback failed",
+                        error = reported.message ?: DesktopStrings["d_playback_failed", "Playback failed"],
                     )
                 },
             )
@@ -320,7 +320,7 @@ class DesktopPlaybackEngine(
             _state.value = DesktopPlaybackState(
                 song = song,
                 volume = volume,
-                error = "Could not play this track: ${failure.message}",
+                error = DesktopStrings.format("d_could_not_play_this_track", failure.message, fallback = "Could not play this track: %1\$s"),
             )
         }
     }
@@ -402,7 +402,11 @@ class DesktopPlaybackEngine(
                             "${DesktopMusicSources.sourceNameFor(stream)}: ${failure.message}",
                     )
                     _state.update { it.copy(
-                        error = "Could not switch version: ${failure.message ?: "that copy would not open"}",
+                        error = DesktopStrings.format(
+                            "d_could_not_switch_version",
+                            failure.message ?: DesktopStrings["d_that_copy_would_not_open", "that copy would not open"],
+                            fallback = "Could not switch version: %1\$s",
+                        ),
                     ) }
                 },
             )
@@ -429,7 +433,11 @@ class DesktopPlaybackEngine(
                 onFailure = { failure ->
                     DesktopTrackLog.log("could not re-open '${song.title}': ${failure.message}")
                     _state.update { it.copy(
-                        error = "Could not switch version: ${failure.message ?: "no source answered"}",
+                        error = DesktopStrings.format(
+                            "d_could_not_switch_version",
+                            failure.message ?: DesktopStrings["d_no_source_answered", "no source answered"],
+                            fallback = "Could not switch version: %1\$s",
+                        ),
                     ) }
                 },
             )
@@ -1403,7 +1411,9 @@ class DesktopPlaybackEngine(
         output.onFailure { failure ->
             paused = true
             DesktopTrackLog.log("audio output failed: ${failure.message}")
-            _state.update { it.copy(isPlaying = false, error = "No audio output: ${failure.message}") }
+            _state.update {
+                it.copy(isPlaying = false, error = DesktopStrings.format("d_no_audio_output", failure.message, fallback = "No audio output: %1\$s"))
+            }
             return
         }
         sink.gain = volume
@@ -1439,7 +1449,7 @@ class DesktopPlaybackEngine(
                 resetPlayhead(track, positionUs)
             }
             .onFailure { failure ->
-                _state.update { it.copy(error = "No audio output: ${failure.message}") }
+                _state.update { it.copy(error = DesktopStrings.format("d_no_audio_output", failure.message, fallback = "No audio output: %1\$s")) }
             }
     }
 
@@ -1898,7 +1908,7 @@ class DesktopPlaybackEngine(
     }
 
     /** What the device actually accepted, for the settings screen to report. */
-    fun outputSummary(): String = if (!sink.isOpen) "Not started" else with(sink.format) {
+    fun outputSummary(): String = if (!sink.isOpen) DesktopStrings["d_not_started", "Not started"] else with(sink.format) {
         val depth = if (isFloat) "32-bit float" else "${bytesPerSample * 8}-bit"
         "$depth · ${sampleRate / 1000.0} kHz · ${if (channels == 2) "stereo" else "$channels ch"}"
     }

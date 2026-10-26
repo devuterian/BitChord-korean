@@ -59,7 +59,7 @@ internal suspend fun loadSpotifyPlaylist(
     val tracks = SpotifyLibrary.tracks(playlistId) { soFar ->
         update { it.copy(songs = soFar.map(SpotifyTrack::asPendingSong), loading = false) }
     }
-    check(tracks.isNotEmpty()) { "This Spotify playlist has no tracks." }
+    check(tracks.isNotEmpty()) { DesktopStrings["d_this_spotify_playlist_has_no_tracks", "This Spotify playlist has no tracks."] }
     val gate = Semaphore(MATCH_PARALLELISM)
     tracks.forEachIndexed { index, track ->
         launch {

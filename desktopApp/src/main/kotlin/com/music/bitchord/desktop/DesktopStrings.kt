@@ -29,6 +29,7 @@ object DesktopStrings {
         DesktopLanguage("id", "Bahasa Indonesia"),
         DesktopLanguage("it", "Italiano"),
         DesktopLanguage("ja", "日本語"),
+        DesktopLanguage("ko", "한국어"),
         DesktopLanguage("pl", "Polski"),
         DesktopLanguage("pt", "Português"),
         DesktopLanguage("ru", "Русский"),
@@ -46,6 +47,10 @@ object DesktopStrings {
 
     /** The stored choice: a tag, or blank for the system's own language. */
     val language: StateFlow<String> = _language
+
+    // BitChord-korean: declared above the first load. Below it, the regex was still null when
+    // init ran, unescape threw, and the system-language catalogue silently came back empty.
+    private val UNICODE_ESCAPE = Regex("""\\u([0-9a-fA-F]{4})""")
 
     init {
         current = catalogue(resolvedTag())
@@ -139,8 +144,6 @@ object DesktopStrings {
         val decoded = UNICODE_ESCAPE.replace(raw) { it.groupValues[1].toInt(16).toChar().toString() }
         return decoded.replace("\\'", "'").replace("\\\"", "\"").replace("\\n", "\n")
     }
-
-    private val UNICODE_ESCAPE = Regex("""\\u([0-9a-fA-F]{4})""")
 
     internal const val KEY_LANGUAGE = "app_language"
 }

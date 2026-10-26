@@ -128,6 +128,8 @@ object YtMusicRepository {
                 .map { ShelfItem(it.title, it.artist, it.thumbnailUrl, it.videoId, null) }
             // Fewer than half resolved: a flaky search run, not a chart worth keeping for six hours.
             if (items.size * 2 < entries.size) {
+                // Backed off like a dead endpoint, or every Home load would run the whole lookup again.
+                chartFailedAt[name] = System.currentTimeMillis()
                 return stale() ?: items.takeIf { it.isNotEmpty() }?.let { HomeShelf(title = title, items = it) }
             }
             HomeShelf(title = title, items = items).also { KoreanCharts.writeCached(name, it) }
@@ -141,17 +143,63 @@ object YtMusicRepository {
     }
 
     private suspend fun resolveChartEntry(entry: KoreanCharts.Entry): Song? {
-        val page = searchPage("${entry.title} ${entry.artist}".trim(), SearchFilter.SONGS).getOrNull() ?: return null
+        val query = "${entry.title} ${entry.artist}".trim()
+        val page = searchPage(query, SearchFilter.SONGS).getOrNull() ?: return null
         val song = page.rows.firstNotNullOfOrNull {
             when (it) {
                 is SearchResult.TopTrack -> it.song
                 is SearchResult.Track -> it.song
                 is SearchResult.Browse -> null
             }
-        } ?: return null
+        } ?: return resolveChartEntryByAlbum(entry, query)
         val matchSeconds = (song.durationMillis() / 1000).toInt()
         return song.takeIf { KoreanCharts.durationAcceptable(entry.durationSeconds, matchSeconds) }
     }
+
+    /**
+     * Signed-out song search comes back empty from Korean addresses, while album search and
+     * album pages still answer. So: the album the chart's song is on, then the song on it.
+     */
+    private suspend fun resolveChartEntryByAlbum(entry: KoreanCharts.Entry, query: String): Song? {
+        val names = chartArtistKeys(entry.artist)
+        val album = searchPage(query, SearchFilter.ALBUMS).getOrNull()?.rows
+            ?.mapNotNull { (it as? SearchResult.Browse)?.item }
+            ?.firstOrNull { item -> chartKey(item.subtitle).let { by -> names.any { it in by } } }
+            ?: return null
+        val songs = browseSongs(album.browseId).getOrNull()?.songs.orEmpty()
+        val wanted = chartTitleKey(entry.title).ifEmpty { chartKey(entry.title) }
+        if (wanted.isEmpty()) return null
+        val fits = songs.filter {
+            KoreanCharts.durationAcceptable(entry.durationSeconds, (it.durationMillis() / 1000).toInt())
+        }
+        return fits.firstOrNull { chartKey(it.title) == chartKey(entry.title) }
+            // Brackets aside only after that, so "BAD" doesn't land on "BAD (Japanese Ver.)" first.
+            ?: fits.firstOrNull { chartTitleKey(it.title) == wanted }
+            ?: fits.firstOrNull { song ->
+                // "퇴사할게여" against "퇴사할게여 (Narr. 기안84)" and the like, never a bare "love" in "lovesick".
+                val key = chartTitleKey(song.title)
+                key.length >= 3 && wanted.length >= 3 && (key.startsWith(wanted) || wanted.startsWith(key)) &&
+                    minOf(key.length, wanted.length) * 2 >= maxOf(key.length, wanted.length)
+            }
+            // A one-song single named for the song is the song, whatever the track calls itself.
+            ?: fits.singleOrNull()?.takeIf { chartTitleKey(album.title) == wanted }
+    }
+
+    /** A title with case, width, brackets ("(Narr. ...)", "(feat. ...)") and spacing set aside. */
+    private fun chartTitleKey(title: String): String = chartKey(title.replace(CHART_TITLE_BRACKETS, ""))
+
+    private fun chartKey(text: String): String = TrackMatcher.normalize(text).filterNot { it.isWhitespace() }
+
+    /** Each credited artist, and the other spelling the chart gives in brackets ("소연 (SOYEON)"). */
+    private fun chartArtistKeys(artist: String): List<String> = artist.split(',', '&')
+        .flatMap { name ->
+            listOf(name.replace(CHART_TITLE_BRACKETS, "")) +
+                CHART_TITLE_BRACKETS.findAll(name).map { it.value.trim('(', ')', '[', ']') }
+        }
+        .map(::chartKey)
+        .filter { it.length >= 2 }
+
+    private val CHART_TITLE_BRACKETS = Regex("""\([^)]*\)|\[[^]]*]""")
 
     val HOME_SUPPLEMENT_BROWSE_IDS = listOf(
         "FEmusic_new_releases",

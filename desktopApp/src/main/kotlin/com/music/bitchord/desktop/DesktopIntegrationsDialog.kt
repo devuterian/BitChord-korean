@@ -128,15 +128,15 @@ private fun SpotifySection(spotify: DesktopSpotifyConnection) {
     PanelGroup(
         header = "Spotify",
         footer = spotify.error
-            ?: "Sign in to show Spotify Canvas behind your tracks. Playback uses YouTube Music.",
+            ?: DesktopStrings["d_sign_in_to_show_spotify_canvas_behind_your_tracks", "Sign in to show Spotify Canvas behind your tracks. Playback uses YouTube Music."],
     ) {
         PanelActionRow(
             title = "Spotify",
             subtitle = when {
                 spotify.connected -> DesktopStrings["connected", "Connected"]
-                spotify.signingIn -> "Finish signing in in the Spotify window. Click to cancel"
-                spotify.canSignIn -> "Click to sign in"
-                else -> "Click to paste your sp_dc cookie"
+                spotify.signingIn -> DesktopStrings["d_finish_signing_in_in_the_spotify_window_click_to_cancel", "Finish signing in in the Spotify window. Click to cancel"]
+                spotify.canSignIn -> DesktopStrings["d_click_to_sign_in", "Click to sign in"]
+                else -> DesktopStrings["d_click_to_paste_your_sp_dc_cookie", "Click to paste your sp_dc cookie"]
             },
             destructive = false,
             onClick = {
@@ -151,15 +151,15 @@ private fun SpotifySection(spotify: DesktopSpotifyConnection) {
             DesktopCardRule()
             PanelActionRow(
                 title = DesktopStrings["spotify_disconnect", "Disconnect"],
-                subtitle = "Forgets the sp_dc cookie; Canvas stops until you sign in again",
+                subtitle = DesktopStrings["d_forgets_the_sp_dc_cookie_canvas_stops_until_you_sign_in_again", "Forgets the sp_dc cookie; Canvas stops until you sign in again"],
                 destructive = true,
                 onClick = spotify.onDisconnect,
             )
         } else if (spotify.canSignIn && !spotify.signingIn) {
             DesktopCardRule()
             PanelActionRow(
-                title = "Paste a cookie instead",
-                subtitle = "Copy sp_dc from open.spotify.com yourself",
+                title = DesktopStrings["d_paste_a_cookie_instead", "Paste a cookie instead"],
+                subtitle = DesktopStrings["d_copy_sp_dc_from_open_spotify_com_yourself", "Copy sp_dc from open.spotify.com yourself"],
                 destructive = false,
                 onClick = spotify.onPasteCookie,
             )
@@ -194,16 +194,15 @@ private fun DiscordSection(
     val connected = local || token.isNotBlank()
 
     PanelGroup(
-        header = "Rich presence",
-        footer = "The card updates when the track, position or playback state changes. " +
-            "It clears when playback stops.",
+        header = DesktopStrings["rich_presence", "Rich presence"],
+        footer = DesktopStrings["discord_presence_footer", "The card updates when the track, position or playback state changes. It clears when playback stops."],
     ) {
         PanelSwitchRow(
             title = DesktopStrings["show_what_playing", "Show what I am playing"],
             subtitle = when {
-                !connected -> "Connect an account first"
-                local -> "Sharing through the Discord app on this computer"
-                username.isNotBlank() -> "Sharing as @$username"
+                !connected -> DesktopStrings["connect_account_first", "Connect an account first"]
+                local -> DesktopStrings["d_sharing_through_the_discord_app_on_this_computer", "Sharing through the Discord app on this computer"]
+                username.isNotBlank() -> DesktopStrings.format("sharing_as", username, fallback = "Sharing as @%1\$s")
                 else -> null
             },
             checked = rpcEnabled && connected,
@@ -237,8 +236,8 @@ private fun DiscordSection(
     }
 
     if (connected && rpcEnabled && advanced) {
-        PanelGroup(header = "Presence") {
-            PanelValueRow("Status", DesktopDiscordSettings.statusLabel(status)) {
+        PanelGroup(header = DesktopStrings["presence", "Presence"]) {
+            PanelValueRow(DesktopStrings["status", "Status"], DesktopDiscordSettings.statusLabel(status)) {
                 onChoose(
                     DiscordChoice(
                         title = DesktopStrings["status", "Status"],
@@ -250,7 +249,7 @@ private fun DiscordSection(
                 )
             }
             DesktopCardRule()
-            PanelValueRow("Activity", DesktopDiscordSettings.activityLabel(activityType)) {
+            PanelValueRow(DesktopStrings["activity", "Activity"], DesktopDiscordSettings.activityLabel(activityType)) {
                 onChoose(
                     DiscordChoice(
                         title = DesktopStrings["activity", "Activity"],
@@ -262,7 +261,7 @@ private fun DiscordSection(
                 )
             }
             DesktopCardRule()
-            PanelValueRow("Name", activityName.ifEmpty { DesktopDiscordSettings.APP_NAME }) {
+            PanelValueRow(DesktopStrings["name", "Name"], activityName.ifEmpty { DesktopDiscordSettings.APP_NAME }) {
                 onEdit(
                     DiscordField(
                         title = DesktopStrings["name", "Name"],
@@ -281,9 +280,8 @@ private fun DiscordSection(
         }
 
         PanelGroup(
-            header = "Buttons",
-            footer = "{song_name}, {artist_name} and {album_name} are replaced with the track. " +
-                "The first button opens the song on YouTube Music and the second opens this project.",
+            header = DesktopStrings["buttons", "Buttons"],
+            footer = DesktopStrings["discord_buttons_footer", "{song_name}, {artist_name} and {album_name} are replaced with the track. The first button opens the song on YouTube Music and the second opens this project."],
         ) {
             PanelSwitchRow(
                 title = DesktopStrings["first_button", "First button"],
@@ -324,9 +322,9 @@ private fun DiscordSection(
     }
 
     PanelGroup(
-        header = "Preview",
+        header = DesktopStrings["preview", "Preview"],
         boxed = true,
-        footer = if (song == null) "Play something to fill in the preview." else null,
+        footer = if (song == null) DesktopStrings["play_to_preview", "Play something to fill in the preview."] else null,
     ) {
         RichPresencePreview(
             song = song,
@@ -345,15 +343,14 @@ private fun DiscordSection(
     // is not answering; see [DesktopDiscordRpc].
     if (!local) {
         PanelGroup(
-            footer = "Signing in with a token grants full account access, and account " +
-                "automation is against Discord's terms. Use it only if you accept that risk.",
+            footer = DesktopStrings["d_signing_in_with_a_token_grants_full_account_access", "Signing in with a token grants full account access, and account automation is against Discord's terms. Use it only if you accept that risk."],
         ) {
             PanelActionRow(
-                title = if (token.isBlank()) "Enter a token instead" else "Disconnect",
+                title = if (token.isBlank()) DesktopStrings["enter_token_instead", "Enter a token instead"] else DesktopStrings["disconnect", "Disconnect"],
                 subtitle = if (token.isBlank()) {
-                    "Use this if Discord is not running on this computer"
+                    DesktopStrings["d_use_this_if_discord_is_not_running_on_this_computer", "Use this if Discord is not running on this computer"]
                 } else {
-                    "Signed in as @$username"
+                    DesktopStrings.format("d_signed_in_as_at", username, fallback = "Signed in as @%1\$s")
                 },
                 destructive = token.isNotBlank(),
                 onClick = { if (token.isBlank()) onOpenDiscordToken() else DesktopDiscordRpc.signOut() },
@@ -372,12 +369,12 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
     val signedIn = lastfmSession.isNotBlank()
 
     PanelGroup(
-        header = "Scrobbling",
-        footer = "Scrobble your listens to Last.fm and ListenBrainz.",
+        header = DesktopStrings["scrobbling", "Scrobbling"],
+        footer = DesktopStrings["scrobbling_footer", "Scrobble your listens to Last.fm and ListenBrainz."],
     ) {
         PanelSwitchRow(
             title = "ListenBrainz",
-            subtitle = if (lbEnabled && lbToken.isNotBlank()) "Connected" else "Enter a token to enable",
+            subtitle = if (lbEnabled && lbToken.isNotBlank()) DesktopStrings["connected", "Connected"] else DesktopStrings["enter_token_to_enable", "Enter a token to enable"],
             checked = lbEnabled,
             onCheckedChange = { checked ->
                 if (checked && lbToken.isBlank()) onOpenListenBrainz()
@@ -401,8 +398,8 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
             // No API-key gate: a build without baked-in credentials asks for the
             // listener's own key and secret in the sign-in dialog instead.
             subtitle = when {
-                signedIn -> "Signed in as $lastfmUser"
-                else -> "Tap to sign in"
+                signedIn -> DesktopStrings.format("signed_in_as", lastfmUser, fallback = "Signed in as %1\$s")
+                else -> DesktopStrings["tap_to_sign_in", "Tap to sign in"]
             },
             checked = lastfmEnabled,
             onCheckedChange = { checked ->
@@ -442,19 +439,19 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
         val minDuration by DesktopScrobbleSettings.minDuration.collectAsState()
         val delayPercent by DesktopScrobbleSettings.delayPercent.collectAsState()
         val delaySeconds by DesktopScrobbleSettings.delaySeconds.collectAsState()
-        PanelGroup(header = "Scrobble timing") {
+        PanelGroup(header = DesktopStrings["scrobble_timing", "Scrobble timing"]) {
             PanelSliderRow(
-                "Minimum song duration",
-                "Shorter songs will not scrobble",
-                "${minDuration}s",
+                DesktopStrings["min_song_duration", "Minimum song duration"],
+                DesktopStrings["min_song_duration_subtitle", "Shorter songs will not scrobble"],
+                DesktopStrings.format("d_seconds_short", minDuration, fallback = "%1\$ss"),
                 minDuration.toFloat(),
                 15f..120f,
                 20,
             ) { DesktopScrobbleSettings.setMinDuration(it.roundToInt()) }
             DesktopCardRule()
             PanelSliderRow(
-                "Scrobble delay",
-                "How far into a song to scrobble it",
+                DesktopStrings["scrobble_delay", "Scrobble delay"],
+                DesktopStrings["scrobble_delay_subtitle", "How far into a song to scrobble it"],
                 "${(delayPercent * 100).roundToInt()}%",
                 delayPercent,
                 0.1f..1.0f,
@@ -462,9 +459,9 @@ private fun ScrobblingSection(onOpenLastfm: () -> Unit, onOpenListenBrainz: () -
             ) { DesktopScrobbleSettings.setDelayPercent(it) }
             DesktopCardRule()
             PanelSliderRow(
-                "Maximum delay",
-                "Maximum scrobble delay in seconds",
-                "${delaySeconds}s",
+                DesktopStrings["max_delay", "Maximum delay"],
+                DesktopStrings["max_delay_subtitle", "Maximum scrobble delay in seconds"],
+                DesktopStrings.format("d_seconds_short", delaySeconds, fallback = "%1\$ss"),
                 delaySeconds.toFloat(),
                 30f..300f,
                 26,
@@ -486,8 +483,8 @@ private fun RichPresencePreview(
     button2Text: String,
     button2Visible: Boolean,
 ) {
-    val title = song?.title ?: "Song title"
-    val artist = song?.artist ?: "Artist"
+    val title = song?.title ?: DesktopStrings["widget_preview_title", "Song title"]
+    val artist = song?.artist ?: DesktopStrings["artist", "Artist"]
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             "$verb $heading".uppercase(Locale.ROOT),

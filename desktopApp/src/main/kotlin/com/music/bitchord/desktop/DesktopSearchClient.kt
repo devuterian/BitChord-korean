@@ -61,7 +61,7 @@ object DesktopSearchClient {
                 browseId = browseId,
                 title = header?.title?.takeIf(String::isNotBlank)
                     ?: fallback?.title?.takeIf(String::isNotBlank)
-                    ?: "Collection",
+                    ?: DesktopStrings["d_collection", "Collection"],
                 subtitle = header?.subtitle?.takeIf(String::isNotBlank) ?: fallback?.subtitle.orEmpty(),
                 thumbnailUrl = header?.thumbnailUrl ?: fallback?.thumbnailUrl,
                 type = fallback?.type?.takeIf { it != BrowseType.OTHER } ?: browseTypeOf(browseId),

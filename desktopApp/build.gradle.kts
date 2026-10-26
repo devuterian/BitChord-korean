@@ -7,7 +7,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val appVersion: String = providers.gradleProperty("bitchord.version").orNull
     ?.removePrefix("v")
     ?.takeIf { it.isNotBlank() }
-    ?: "1.8-beta1"
+    // BitChord-korean: the fork's own "<upstream>.<build>" from the root build script.
+    ?: "${rootProject.extra["bitchordVersionName"]}.${rootProject.extra["bitchordKoreanBuild"]}"
 
 /** Which platform this build is *for*, which is the host unless told otherwise. */
 val hostIsWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
@@ -27,7 +28,10 @@ val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 // intentionally displayed without a patch number (1.7 rather than 1.7.0).
 // The build number is the desktop version code; it also keeps "-beta1" out of the numeric installer version.
 val desktopVersionCode = 29
-val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") + ".$desktopVersionCode"
+// BitChord-korean: the fork's build rides in the last place (29 -> 2902), so each fork release
+// is a newer package to the installers and to macOS, not the same 1.8.29 again.
+val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") +
+    ".${desktopVersionCode * 100 + (rootProject.extra["bitchordKoreanBuild"] as Int)}"
 
 // FFmpeg decodes audio; see DesktopAudioDecoder.
 val javacppVersion = "1.5.12"
@@ -148,6 +152,9 @@ dependencies {
 
 tasks.withType<Test> {
     systemProperty("java.awt.headless", "true")
+    // The tests read English copy back; on a Korean Mac the catalogues now follow the system.
+    systemProperty("user.language", "en")
+    systemProperty("user.country", "US")
 }
 
 kotlin {
@@ -526,11 +533,13 @@ compose.desktop {
                 TargetFormat.Deb,
                 TargetFormat.Rpm,
             )
-            packageName = "BitChord"
+            packageName = "BitChord KR"
             packageVersion = nativePackageVersion
             description = if (targetOs == "windows") "BitChord" else "Aesthetic YouTube Music client"
             vendor = "BitChord contributors"
             copyright = "Copyright © 2026 BitChord contributors"
+            // Ends up in Contents/app/resources; the macOS AppleScript dictionary is read from there.
+            appResourcesRootDir.set(project.layout.projectDirectory.dir("packaging/resources"))
 
             modules(
                 "java.base",
@@ -558,13 +567,41 @@ compose.desktop {
 
             macOS {
                 iconFile.set(project.file("packaging/icons/AppIcon.icns"))
-                bundleID = "com.music.bitchord"
+                bundleID = "com.marierie.bitchordkorean"
                 appCategory = "public.app-category.music"
-                dockName = "BitChord"
+                dockName = "BitChord KR"
                 infoPlist {
+                    // BitChord-korean: without a localization list macOS hands the JVM English,
+                    // whatever the system language, and the desktop catalogues never switch.
                     extraKeysRawXml = """
                         <key>NSRequiresAquaSystemAppearance</key>
                         <false/>
+                        <key>NSAppleScriptEnabled</key>
+                        <true/>
+                        <key>OSAScriptingDefinition</key>
+                        <string>../app/resources/BitChord.sdef</string>
+                        <key>CFBundleAllowMixedLocalizations</key>
+                        <true/>
+                        <key>CFBundleLocalizations</key>
+                        <array>
+                            <string>en</string>
+                            <string>ko</string>
+                            <string>de</string>
+                            <string>es</string>
+                            <string>fr</string>
+                            <string>he</string>
+                            <string>hi</string>
+                            <string>id</string>
+                            <string>it</string>
+                            <string>ja</string>
+                            <string>pl</string>
+                            <string>pt</string>
+                            <string>ru</string>
+                            <string>th</string>
+                            <string>tr</string>
+                            <string>zh-Hans</string>
+                            <string>zh-Hant</string>
+                        </array>
                     """.trimIndent()
                 }
             }
@@ -579,7 +616,8 @@ compose.desktop {
 
             windows {
                 iconFile.set(project.file("packaging/icons/AppIcon.ico"))
-                upgradeUuid = "8f3c1d24-6a2b-4f5e-9c17-2b8d54e0a913"
+                // Its own, so the fork never upgrades over upstream BitChord or the other way round.
+                upgradeUuid = "a6a88146-bcac-451d-bacf-176e700b71af"
                 menuGroup = "BitChord"
                 shortcut = true
                 dirChooser = false

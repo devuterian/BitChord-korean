@@ -185,7 +185,7 @@ internal object DesktopListenTogether {
     }
 
     fun setCustomServerUrl(value: String): Result<Unit> = runCatching {
-        check(!_state.value.inParty) { "Leave the current party before changing servers." }
+        check(!_state.value.inParty) { DesktopStrings["d_leave_the_current_party_before_changing_servers", "Leave the current party before changing servers."] }
         val normalized = normalizeServerUrl(value).getOrThrow()
         persistence.saveString(KEY_SERVER, normalized)
         _customServer.value = normalized
@@ -196,33 +196,33 @@ internal object DesktopListenTogether {
     fun normalizeServerUrl(value: String): Result<String> = runCatching {
         val trimmed = value.trim()
         if (trimmed.isEmpty()) return@runCatching ""
-        if (trimmed.any(Char::isWhitespace)) throw PartyException("bad_server", "Remove spaces from the server address.")
+        if (trimmed.any(Char::isWhitespace)) throw PartyException("bad_server", DesktopStrings["d_remove_spaces_from_the_server_address", "Remove spaces from the server address."])
         val candidate = if ("://" in trimmed) trimmed else "https://$trimmed"
         val uri = runCatching { URI(candidate) }.getOrElse {
-            throw PartyException("bad_server", "Enter a valid party server address.")
+            throw PartyException("bad_server", DesktopStrings["d_enter_a_valid_party_server_address", "Enter a valid party server address."])
         }
         val rawHost = uri.host
         if (uri.scheme?.lowercase() !in setOf("http", "https") || rawHost.isNullOrBlank()) {
-            throw PartyException("bad_server", "Use an http or https party server address.")
+            throw PartyException("bad_server", DesktopStrings["d_use_an_http_or_https_party_server_address", "Use an http or https party server address."])
         }
         if (candidate.contains('?') || candidate.contains('#') || uri.userInfo != null) {
-            throw PartyException("bad_server", "The server address can't include credentials, a query, or a fragment.")
+            throw PartyException("bad_server", DesktopStrings["d_the_server_address_cant_include_credentials_a_query_or_a", "The server address can't include credentials, a query, or a fragment."])
         }
         if (uri.port != -1 && uri.port !in 1..65535) {
-            throw PartyException("bad_server", "The server address has an invalid port.")
+            throw PartyException("bad_server", DesktopStrings["d_the_server_address_has_an_invalid_port", "The server address has an invalid port."])
         }
         val path = uri.rawPath.orEmpty().trimEnd('/')
         if (path.split('/').any { it == "." || it == ".." }) {
-            throw PartyException("bad_server", "The server address has an invalid path.")
+            throw PartyException("bad_server", DesktopStrings["d_the_server_address_has_an_invalid_path", "The server address has an invalid path."])
         }
         val host = rawHost.lowercase()
         if (host != "localhost" && ':' !in host && '.' !in host) {
-            throw PartyException("bad_server", "Enter a complete party server hostname.")
+            throw PartyException("bad_server", DesktopStrings["d_enter_a_complete_party_server_hostname", "Enter a complete party server hostname."])
         }
         if (':' !in host && host != "localhost") {
             val validLabel = Regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
             if (host.split('.').any { it.isEmpty() || it.length > 63 || !validLabel.matches(it) }) {
-                throw PartyException("bad_server", "Enter a valid party server hostname.")
+                throw PartyException("bad_server", DesktopStrings["d_enter_a_valid_party_server_hostname", "Enter a valid party server hostname."])
             }
         }
         URI(uri.scheme.lowercase(), null, host, uri.port, path.ifBlank { null }, null, null)
@@ -276,7 +276,7 @@ internal object DesktopListenTogether {
     suspend fun joinParty(code: String, nickname: String = nickname()): Result<String> {
         val trimmed = cleanCode(code)
         if (trimmed.length != CODE_LENGTH) {
-            return Result.failure(PartyException("bad_code", "A party code is six letters or digits."))
+            return Result.failure(PartyException("bad_code", DesktopStrings["d_a_party_code_is_six_letters_or_digits", "A party code is six letters or digits."]))
         }
         return runCatching { refuseIfRecentlyKicked(trimmed) }.fold(
             onSuccess = {
@@ -297,11 +297,11 @@ internal object DesktopListenTogether {
     ): Result<String> = withContext(Dispatchers.IO) {
         val who = identity(nickname)
             ?: return@withContext Result.failure(
-                PartyException("not_signed_in", "Sign in to listen together."),
+                PartyException("not_signed_in", DesktopStrings["d_sign_in_to_listen_together", "Sign in to listen together."]),
             )
         if (!hasServer) {
             return@withContext Result.failure(
-                PartyException("no_server", "Set the party server address first."),
+                PartyException("no_server", DesktopStrings["d_set_the_party_server_address_first", "Set the party server address first."]),
             )
         }
         val primary = resolveIdleServer()
@@ -689,13 +689,13 @@ internal object DesktopListenTogether {
         val cleaned = cleanCode(code)
         if (cleaned.length != CODE_LENGTH) {
             return@withContext Result.failure(
-                PartyException("bad_code", "A party code is six letters or digits."),
+                PartyException("bad_code", DesktopStrings["d_a_party_code_is_six_letters_or_digits", "A party code is six letters or digits."]),
             )
         }
         runCatching {
             refuseIfRecentlyKicked(cleaned)
             val base = resolveIdleServer()
-            if (base.isBlank()) throw PartyException("no_server", "Set the party server address first.")
+            if (base.isBlank()) throw PartyException("no_server", DesktopStrings["d_set_the_party_server_address_first", "Set the party server address first."])
             val response = http.get("$base/api/parties/$cleaned/preview")
             if (!response.status.isSuccess()) {
                 val problem = response.toPartyException()
@@ -721,8 +721,8 @@ internal object DesktopListenTogether {
         return PartyException(
             code = parsed?.code.orEmpty().ifBlank { "http_${status.value}" },
             message = parsed?.message?.takeIf { it.isNotBlank() }
-                ?: if (status.value == 422) "This account can't be used to jam."
-                else "The party server said ${status.value}.",
+                ?: if (status.value == 422) DesktopStrings["d_this_account_cant_be_used_to_jam", "This account can't be used to jam."]
+                else DesktopStrings.format("d_the_party_server_said", status.value, fallback = "The party server said %1\$s."),
             statusCode = status.value,
         )
     }
@@ -827,7 +827,7 @@ internal object DesktopListenTogether {
         if (cleanCode(code) in recentKicks()) {
             throw PartyException(
                 "recently_kicked",
-                "Couldn't let you in — you've recently been removed from this party.",
+                DesktopStrings["d_couldnt_let_you_in_youve_recently_been_removed_from_this", "Couldn't let you in — you've recently been removed from this party."],
             )
         }
     }
@@ -864,7 +864,8 @@ internal object DesktopListenTogether {
     private const val KEY_ACTIVE_SERVER = "listen_together_active_server"
     private const val KEY_KICKED = "listen_together_kicked_until"
     private const val SERVER_PLACEHOLDER = "<party server>"
-    private const val UNREACHABLE = "Couldn't reach the party server."
+    private val UNREACHABLE: String
+        get() = DesktopStrings["d_couldnt_reach_the_party_server", "Couldn't reach the party server."]
     private const val PING_INTERVAL_MS = 15_000L
     private const val REPORT_INTERVAL_MS = 10_000L
     private const val CUSTOM_SERVER_TIMEOUT_MS = 6_000L

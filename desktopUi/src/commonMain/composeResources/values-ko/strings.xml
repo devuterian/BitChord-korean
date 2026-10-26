@@ -182,6 +182,8 @@
     <string name="shelf_listen_again">다시 듣기</string>
     <string name="shelf_mixed_for_you">맞춤 믹스</string>
     <string name="shelf_new_releases">신규 발매</string>
+    <string name="shelf_melon_top_100">멜론 TOP 100</string>
+    <string name="shelf_circle_chart_weekly">써클차트 주간</string>
     <string name="shelf_quick_picks">빠른 선곡</string>
     <string name="shelf_recents">최근 재생</string>
     <string name="shelf_recommended_music_videos">추천 뮤직비디오</string>
@@ -207,4 +209,9 @@
     <string name="import_spotify">Spotify 가져오기</string>
     <string name="import_spotify_subtitle">재생목록 링크로 가져오기</string>
     <string name="sign_in_with_google">Google로 로그인</string>
+    <string name="songs">곡</string>
+    <string name="search_filter_all">전체</string>
+    <string name="search_filter_videos">동영상</string>
+    <string name="search_top_result">상위 검색결과</string>
+    <string name="search_section_more">기타</string>
 </resources>

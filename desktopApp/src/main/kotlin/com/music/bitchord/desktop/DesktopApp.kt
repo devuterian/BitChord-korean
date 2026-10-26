@@ -266,11 +266,11 @@ import androidx.compose.ui.unit.sp
 import bitchord.desktopapp.generated.resources.Res
 import bitchord.desktopapp.generated.resources.logo
 import bitchord.desktopapp.generated.resources.logo_mark
-import bitchord.desktopapp.generated.resources.sf_pro_display_bold
-import bitchord.desktopapp.generated.resources.sf_pro_display_heavy
-import bitchord.desktopapp.generated.resources.sf_pro_display_medium
-import bitchord.desktopapp.generated.resources.sf_pro_display_regular
-import bitchord.desktopapp.generated.resources.sf_pro_display_semibold
+import bitchord.desktopapp.generated.resources.pretendard_jp_bold
+import bitchord.desktopapp.generated.resources.pretendard_jp_extrabold
+import bitchord.desktopapp.generated.resources.pretendard_jp_medium
+import bitchord.desktopapp.generated.resources.pretendard_jp_regular
+import bitchord.desktopapp.generated.resources.pretendard_jp_semibold
 import com.music.bitchord.data.model.ArtistPage
 import com.music.bitchord.data.model.BrowseItem
 import com.music.bitchord.data.model.BrowseType
@@ -329,6 +329,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -452,30 +453,34 @@ internal fun desktopColorScheme() = darkColorScheme(
 
 @Composable
 internal fun desktopTypography(): Typography {
-    val sfProDisplay = FontFamily(
-        composeFont(Res.font.sf_pro_display_regular, FontWeight.W400),
-        composeFont(Res.font.sf_pro_display_medium, FontWeight.W500),
-        composeFont(Res.font.sf_pro_display_semibold, FontWeight.W600),
-        composeFont(Res.font.sf_pro_display_bold, FontWeight.W700),
-        composeFont(Res.font.sf_pro_display_heavy, FontWeight.W800),
+    // Pretendard JP, set for Korean first with the kana and kanji titles often
+    // carry; or the platform's own face when Settings asks for it.
+    val useSystemFont by DesktopAppearanceSettings.useSystemFont.collectAsState()
+    val pretendardJp = FontFamily(
+        composeFont(Res.font.pretendard_jp_regular, FontWeight.W400),
+        composeFont(Res.font.pretendard_jp_medium, FontWeight.W500),
+        composeFont(Res.font.pretendard_jp_semibold, FontWeight.W600),
+        composeFont(Res.font.pretendard_jp_bold, FontWeight.W700),
+        composeFont(Res.font.pretendard_jp_extrabold, FontWeight.W800),
     )
+    val family = if (useSystemFont) FontFamily.Default else pretendardJp
     val defaults = Typography()
     return defaults.copy(
-        displayLarge = defaults.displayLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
-        displayMedium = defaults.displayMedium.copy(fontFamily = sfProDisplay),
-        displaySmall = defaults.displaySmall.copy(fontFamily = sfProDisplay),
-        headlineLarge = defaults.headlineLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W800, fontSize = 30.sp, letterSpacing = (-0.7).sp),
-        headlineMedium = defaults.headlineMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W700, fontSize = 22.sp, letterSpacing = (-0.4).sp),
-        headlineSmall = defaults.headlineSmall.copy(fontFamily = sfProDisplay),
-        titleLarge = defaults.titleLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W700, fontSize = 20.sp, letterSpacing = (-0.3).sp),
-        titleMedium = defaults.titleMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W600, fontSize = 16.sp, letterSpacing = (-0.2).sp),
-        titleSmall = defaults.titleSmall.copy(fontFamily = sfProDisplay),
-        bodyLarge = defaults.bodyLarge.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W400, fontSize = 16.sp),
-        bodyMedium = defaults.bodyMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W400, fontSize = 14.sp),
-        bodySmall = defaults.bodySmall.copy(fontFamily = sfProDisplay),
-        labelLarge = defaults.labelLarge.copy(fontFamily = sfProDisplay),
-        labelMedium = defaults.labelMedium.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W600, fontSize = 12.sp),
-        labelSmall = defaults.labelSmall.copy(fontFamily = sfProDisplay, fontWeight = FontWeight.W600, fontSize = 11.sp),
+        displayLarge = defaults.displayLarge.copy(fontFamily = family, fontWeight = FontWeight.W800, fontSize = 34.sp, letterSpacing = (-0.8).sp),
+        displayMedium = defaults.displayMedium.copy(fontFamily = family),
+        displaySmall = defaults.displaySmall.copy(fontFamily = family),
+        headlineLarge = defaults.headlineLarge.copy(fontFamily = family, fontWeight = FontWeight.W800, fontSize = 30.sp, letterSpacing = (-0.7).sp),
+        headlineMedium = defaults.headlineMedium.copy(fontFamily = family, fontWeight = FontWeight.W700, fontSize = 22.sp, letterSpacing = (-0.4).sp),
+        headlineSmall = defaults.headlineSmall.copy(fontFamily = family),
+        titleLarge = defaults.titleLarge.copy(fontFamily = family, fontWeight = FontWeight.W700, fontSize = 20.sp, letterSpacing = (-0.3).sp),
+        titleMedium = defaults.titleMedium.copy(fontFamily = family, fontWeight = FontWeight.W600, fontSize = 16.sp, letterSpacing = (-0.2).sp),
+        titleSmall = defaults.titleSmall.copy(fontFamily = family),
+        bodyLarge = defaults.bodyLarge.copy(fontFamily = family, fontWeight = FontWeight.W400, fontSize = 16.sp),
+        bodyMedium = defaults.bodyMedium.copy(fontFamily = family, fontWeight = FontWeight.W400, fontSize = 14.sp),
+        bodySmall = defaults.bodySmall.copy(fontFamily = family),
+        labelLarge = defaults.labelLarge.copy(fontFamily = family),
+        labelMedium = defaults.labelMedium.copy(fontFamily = family, fontWeight = FontWeight.W600, fontSize = 12.sp),
+        labelSmall = defaults.labelSmall.copy(fontFamily = family, fontWeight = FontWeight.W600, fontSize = 11.sp),
     )
 }
 
@@ -503,9 +508,15 @@ private enum class DesktopRepeatMode {
     }
 
     fun label(): String = when (this) {
-        OFF -> "Off"
-        ALL -> "All"
-        ONE -> "One"
+        OFF -> DesktopStrings["d_off", "Off"]
+        ALL -> DesktopStrings["d_repeat_all_short", "All"]
+        ONE -> DesktopStrings["d_repeat_one_short", "One"]
+    }
+
+    fun accessibilityLabel(): String = when (this) {
+        OFF -> DesktopStrings["repeat_off", "Repeat off"]
+        ALL -> DesktopStrings["repeat_all", "Repeat all"]
+        ONE -> DesktopStrings["repeat_one", "Repeat one"]
     }
 }
 
@@ -528,7 +539,7 @@ fun BitChordDesktopApp() {
             title = { Text(DesktopStrings["d_update_available", "Update available"]) },
             text = {
                 Text(
-                    "BitChord ${update.version} is out — you have ${DesktopUpdateChecker.currentVersion}." +
+                    DesktopStrings.format("d_update_is_out", update.version, DesktopUpdateChecker.currentVersion, fallback = "BitChord %1\$s is out — you have %2\$s.") +
                         (update.notes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
                 )
             },
@@ -776,9 +787,11 @@ fun BitChordDesktopApp() {
 
     // Whoever was signed in last is signed in again, before anything asks YouTube for something
     // that depends on it.
+    var accountsRestored by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) { DesktopAccounts.activate() }
         sessionRevision++
+        accountsRestored = true
     }
     var audioQuality by remember { mutableStateOf(persistence.audioQuality()) }
     var sourceConfigs by remember { mutableStateOf(persistence.sourceConfigs()) }
@@ -851,7 +864,7 @@ fun BitChordDesktopApp() {
 
     fun partyTrackChangeBlocked(): Boolean {
         if (!DesktopListenTogether.state.value.controlsLocked) return false
-        DesktopPlayerHost.showMessage("Only the party host can change playback")
+        DesktopPlayerHost.showMessage(DesktopStrings["d_only_the_party_host_can_change_playback", "Only the party host can change playback"])
         return true
     }
 
@@ -901,7 +914,7 @@ fun BitChordDesktopApp() {
                 throw cancelled
             } catch (failure: Exception) {
                 DesktopTrackLog.log("sign-in: Spotify failed: ${failure.message}")
-                spotifySignInError = failure.message ?: "Could not complete the Spotify sign-in."
+                spotifySignInError = failure.message ?: DesktopStrings["d_could_not_complete_the_spotify_sign_in", "Could not complete the Spotify sign-in."]
             } finally {
                 spotifySignInJob = null
             }
@@ -915,7 +928,7 @@ fun BitChordDesktopApp() {
         try {
             val scope = withContext(Dispatchers.IO) { DesktopYouTubeSession.adoptSessionScope(cookie) }
             if (scope == null) {
-                signInError = "$label is not signed in to YouTube Music."
+                signInError = DesktopStrings.format("d_label_is_not_signed_in_to_youtube_music", label, fallback = "%1\$s is not signed in to YouTube Music.")
                 return
             }
             DesktopYouTubeAuth.adopt(scope)
@@ -1034,7 +1047,7 @@ fun BitChordDesktopApp() {
         if (party.controlsLocked) return
         if (party.inParty && liveQueue.upcoming.size >= DesktopPartySync.MAX_PARTY_UPCOMING_QUEUE) {
             DesktopPlayerHost.showMessage(
-                "Queue is full (maximum ${DesktopPartySync.MAX_PARTY_UPCOMING_QUEUE} songs in party)",
+                DesktopStrings.format("party_queue_full", DesktopPartySync.MAX_PARTY_UPCOMING_QUEUE, fallback = "Queue is full (maximum %d songs in party)"),
             )
             return
         }
@@ -1138,7 +1151,7 @@ fun BitChordDesktopApp() {
             onSuccess = { loaded ->
                 if (openedCollection?.browseId == pending.browseId) openedCollection = loaded
             },
-            onFailure = { collectionError = it.message ?: "Could not open ${pending.title.ifBlank { "this page" }}" },
+            onFailure = { collectionError = it.message ?: DesktopStrings.format("d_could_not_open", pending.title.ifBlank { DesktopStrings["d_this_page", "this page"] }, fallback = "Could not open %1\$s") },
         )
     }
 
@@ -1157,7 +1170,7 @@ fun BitChordDesktopApp() {
             .onFailure { failure ->
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
                 DesktopTrackLog.log("spotify: playlist ${page.title} failed: ${failure.message}")
-                collectionError = failure.message ?: "Could not open ${page.title}"
+                collectionError = failure.message ?: DesktopStrings.format("d_could_not_open", page.title, fallback = "Could not open %1\$s")
                 // The error page stands in for the list only while there is no list.
                 update { if (it.songs.isEmpty()) it.copy(loading = true) else it }
             }
@@ -1165,9 +1178,9 @@ fun BitChordDesktopApp() {
 
     fun openAlbum(browseId: String) = openCollection(browseId)
 
-    /** Copies the track's YouTube Music link. */
+    /** Copies the track's link, youtu.be or YouTube Music per Settings. */
     fun shareSong(song: Song) {
-        DesktopExternalLinks.copy("https://music.youtube.com/watch?v=${song.videoId}")
+        DesktopExternalLinks.copy(DesktopShareLinks.song(song.videoId))
         DesktopTrackLog.log("copied a link to '${song.title}'")
     }
 
@@ -1179,7 +1192,7 @@ fun BitChordDesktopApp() {
     fun shareCollection(collection: DesktopCollection) {
         val id = collection.browseId
         val url = when (collection.type) {
-            BrowseType.PLAYLIST -> "https://music.youtube.com/playlist?list=${id.removePrefix("VL")}"
+            BrowseType.PLAYLIST -> DesktopShareLinks.playlist(id.removePrefix("VL"))
             BrowseType.ALBUM -> "https://music.youtube.com/browse/$id"
             else -> return
         }
@@ -1492,7 +1505,7 @@ fun BitChordDesktopApp() {
                 }
                 .onFailure {
                     playlistBusy = false
-                    playlistError = it.message ?: "Could not create the playlist"
+                    playlistError = it.message ?: DesktopStrings["d_could_not_create_the_playlist", "Could not create the playlist"]
                 }
         }
     }
@@ -1502,7 +1515,7 @@ fun BitChordDesktopApp() {
             DesktopCollection(
                 browseId = playlist.id,
                 title = playlist.title,
-                subtitle = "Playlist • ${playlist.songs.size} songs",
+                subtitle = DesktopStrings.format("d_playlist_song_count", playlist.songs.size, fallback = "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 type = BrowseType.PLAYLIST,
                 songs = playlist.songs,
@@ -1570,7 +1583,7 @@ fun BitChordDesktopApp() {
                 .onFailure {
                     DesktopTrackLog.log("playlist: could not add ${song.videoId}: ${it.message}")
                     playlistBusy = false
-                    playlistError = it.message ?: "Could not add to ${playlist.title}"
+                    playlistError = it.message ?: DesktopStrings.format("d_could_not_add_to", playlist.title, fallback = "Could not add to %1\$s")
                 }
         }
     }
@@ -1745,6 +1758,27 @@ fun BitChordDesktopApp() {
         )
         onDispose { DesktopWindowsMedia.stop() }
     }
+    // And the macOS one: Control Center, the media keys, and the AppleScript
+    // commands media key routers use to reach this app in particular.
+    DisposableEffect(playbackEngine) {
+        DesktopMacMedia.start(
+            DesktopMacMedia.Controller(
+                onPlay = ::playFromUser,
+                onPause = ::pauseFromUser,
+                onPlayPause = ::togglePlayPauseFromUser,
+                onNext = ::playNext,
+                onPrevious = ::playPrevious,
+                onStop = ::pauseFromUser,
+                onSeek = { positionMs ->
+                    if (!DesktopListenTogether.state.value.controlsLocked) {
+                        playbackEngine.seekTo(positionMs)
+                        partySync.onLocalIntent()
+                    }
+                },
+            ),
+        )
+        onDispose { DesktopMacMedia.stop() }
+    }
 
     LaunchedEffect(playbackSpeed) { playbackEngine.setPlaybackSpeed(playbackSpeed) }
     LaunchedEffect(volume) { playbackEngine.setVolume(volume) }
@@ -1910,7 +1944,7 @@ fun BitChordDesktopApp() {
             return@LaunchedEffect
         }
         if (!syncedLyrics) {
-            lyricsError = "Synced lyrics are switched off"
+            lyricsError = DesktopStrings["d_synced_lyrics_are_switched_off", "Synced lyrics are switched off"]
             lyricsLoading = false
             return@LaunchedEffect
         }
@@ -1940,7 +1974,7 @@ fun BitChordDesktopApp() {
             },
         ).fold(
             onSuccess = { lyrics = it },
-            onFailure = { lyricsError = it.message ?: "Lyrics unavailable" },
+            onFailure = { lyricsError = it.message ?: DesktopStrings["d_lyrics_unavailable", "Lyrics unavailable"] },
         )
         lyricsLoading = false
     }
@@ -1999,6 +2033,11 @@ fun BitChordDesktopApp() {
     LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
         DesktopScrobbling.onPlaybackStateChanged(playback)
         DesktopWindowsMedia.publish(playback)
+    }
+    // Control Center counts the position on by itself from what it was last told, so a seek or a
+    // speed change has to be told too or its scrubber runs on from the old place.
+    LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs, playback.seeks, playbackSpeed) {
+        DesktopMacMedia.publish(playback, playbackSpeed)
     }
     // Refetched on opening the page rather than cached for the session: the
     // point of it is that something played elsewhere shows up here.
@@ -2138,7 +2177,7 @@ fun BitChordDesktopApp() {
         if (artistState !is UiState.Loading) return@LaunchedEffect
         DesktopSearchClient.artistPage(target.browseId).fold(
             onSuccess = { artistState = UiState.Success(it) },
-            onFailure = { artistState = UiState.Error(it.message ?: "Could not open ${target.name}") },
+            onFailure = { artistState = UiState.Error(it.message ?: DesktopStrings.format("d_could_not_open", target.name, fallback = "Could not open %1\$s")) },
         )
     }
 
@@ -2266,12 +2305,12 @@ fun BitChordDesktopApp() {
                             }?.let(::recordSongSearch)
                         }
                     },
-                    onFailure = { searchError = it.message ?: "Search failed" },
+                    onFailure = { searchError = it.message ?: DesktopStrings["d_search_failed", "Search failed"] },
                 )
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Throwable) {
-                searchError = failure.message ?: "Search failed"
+                searchError = failure.message ?: DesktopStrings["d_search_failed", "Search failed"]
             } finally {
                 // OBS and other desktop capture tools can briefly interrupt focus/coroutines.
                 searchLoading = false
@@ -2381,7 +2420,7 @@ fun BitChordDesktopApp() {
     /** The Spotify account's playlists, as a Library grid; Liked Songs first, as on the phone. */
     fun openSpotifyLibrary() {
         libraryShowAll = HomeShelf(SPOTIFY_SHELF, emptyList())
-        spotifyLibraryStatus = "Loading your Spotify playlists…"
+        spotifyLibraryStatus = DesktopStrings["d_loading_your_spotify_playlists", "Loading your Spotify playlists…"]
         scope.launch {
             runCatching { SpotifyLibrary.playlists() }
                 .onSuccess { found ->
@@ -2392,7 +2431,7 @@ fun BitChordDesktopApp() {
                 }
                 .onFailure {
                     DesktopTrackLog.log("spotify: playlists failed: ${it.message}")
-                    spotifyLibraryStatus = "Could not load your Spotify playlists: ${it.message}"
+                    spotifyLibraryStatus = DesktopStrings.format("d_could_not_load_your_spotify_playlists", it.message, fallback = "Could not load your Spotify playlists: %1\$s")
                 }
         }
     }
@@ -2406,7 +2445,7 @@ fun BitChordDesktopApp() {
         playlists.map { playlist ->
             ShelfItem(
                 title = playlist.title,
-                subtitle = "Playlist • ${playlist.songs.size} songs",
+                subtitle = DesktopStrings.format("d_playlist_song_count", playlist.songs.size, fallback = "Playlist • %1\$d songs"),
                 thumbnailUrl = playlist.songs.firstOrNull()?.thumbnailUrl,
                 videoId = null,
                 browseId = LOCAL_PLAYLIST_PREFIX + playlist.id,
@@ -2464,7 +2503,7 @@ fun BitChordDesktopApp() {
      */
     fun loadHome() {
         if (!youtubeSourceEnabled) {
-            homeState = UiState.Error("YouTube Music is disabled")
+            homeState = UiState.Error(DesktopStrings["d_youtube_music_is_disabled", "YouTube Music is disabled"])
             return
         }
         val generation = ++homeGeneration
@@ -2476,7 +2515,7 @@ fun BitChordDesktopApp() {
         homeLoadingMore = false
         homeRecentsLoading = signedIn
         scope.launch {
-            launch {
+            val coreFeed = launch {
                 DesktopSearchClient.home().fold(
                     onSuccess = { feed ->
                         if (generation != homeGeneration) return@fold
@@ -2485,7 +2524,7 @@ fun BitChordDesktopApp() {
                     },
                     onFailure = {
                         if (generation == homeGeneration && homeState !is UiState.Success) {
-                            homeState = UiState.Error(it.message ?: "Could not load Home")
+                            homeState = UiState.Error(it.message ?: DesktopStrings["d_could_not_load_home", "Could not load Home"])
                         }
                     },
                 )
@@ -2505,6 +2544,17 @@ fun BitChordDesktopApp() {
                 launch {
                     DesktopSearchClient.homeSupplement(browseId).onSuccess { shelves ->
                         if (generation == homeGeneration) publishHomeShelves(shelves)
+                    }
+                }
+            }
+            if (DesktopAppearanceSettings.showKoreanCharts.value) {
+                launch {
+                    // Looked up while the core feed loads, but published after it so the
+                    // charts land below YouTube's own shelves rather than above them.
+                    val charts = YtMusicRepository.koreanChartShelves()
+                    coreFeed.join()
+                    if (charts.isNotEmpty() && generation == homeGeneration && homeState is UiState.Success) {
+                        publishHomeShelves(charts)
                     }
                 }
             }
@@ -2580,6 +2630,7 @@ fun BitChordDesktopApp() {
                 // WASAPI and WinRT, and exitProcess would unload those libraries under them.
                 playbackEngine.shutdown()
                 DesktopWindowsMedia.stop()
+                DesktopMacMedia.stop()
                 exitProcess(0)
             },
         )
@@ -2591,6 +2642,11 @@ fun BitChordDesktopApp() {
     }
 
     LaunchedEffect(Unit) {
+        // BitChord-korean: Home before the local scan, which can sit for minutes (or for good, when
+        // macOS holds a folder behind a privacy prompt). After the account is back, though, or the
+        // first Home goes out signed out and is fetched again a moment later.
+        snapshotFlow { accountsRestored }.first { it }
+        loadHome()
         // Unpacks the analyser and its models on first run.
         DesktopAnalysisRuntime.ensureStarted()
         DesktopHorizontalScroll.install()
@@ -2606,7 +2662,6 @@ fun BitChordDesktopApp() {
             downloads = onDisk
             persistence.saveDownloads(onDisk)
         }
-        loadHome()
     }
 
     // The feed is the account's: signing in, out or across to another channel is a different Home,
@@ -2652,19 +2707,19 @@ fun BitChordDesktopApp() {
 
     suspend fun loadExplore() {
         if (!youtubeSourceEnabled) {
-            exploreState = UiState.Error("YouTube Music is disabled")
+            exploreState = UiState.Error(DesktopStrings["d_youtube_music_is_disabled", "YouTube Music is disabled"])
             return
         }
         exploreState = UiState.Loading
         DesktopSearchClient.moodAndGenres().fold(
             onSuccess = { sections ->
                 exploreState = if (sections.isEmpty()) {
-                    UiState.Error("Nothing to explore right now")
+                    UiState.Error(DesktopStrings["nothing_to_explore", "Nothing to explore right now"])
                 } else {
                     UiState.Success(sections)
                 }
             },
-            onFailure = { exploreState = UiState.Error(it.message ?: "Could not load Explore") },
+            onFailure = { exploreState = UiState.Error(it.message ?: DesktopStrings["d_could_not_load_explore", "Could not load Explore"]) },
         )
     }
 
@@ -2761,7 +2816,7 @@ fun BitChordDesktopApp() {
                 }
                 .onFailure {
                     playlistBusy = false
-                    playlistError = it.message ?: "Could not rename the playlist"
+                    playlistError = it.message ?: DesktopStrings["d_could_not_rename_the_playlist", "Could not rename the playlist"]
                 }
         }
     }
@@ -2781,7 +2836,7 @@ fun BitChordDesktopApp() {
                 }
                 .onFailure {
                     playlistBusy = false
-                    playlistError = it.message ?: "Could not delete the playlist"
+                    playlistError = it.message ?: DesktopStrings["d_could_not_delete_the_playlist", "Could not delete the playlist"]
                 }
         }
     }
@@ -2832,7 +2887,7 @@ fun BitChordDesktopApp() {
                 libraryStale = true
             }.onFailure {
                 playlistBusy = false
-                playlistError = it.message ?: "Could not reorder the playlist"
+                playlistError = it.message ?: DesktopStrings["d_could_not_reorder_the_playlist", "Could not reorder the playlist"]
             }
         }
     }
@@ -2882,7 +2937,7 @@ fun BitChordDesktopApp() {
                     }
                 }
             },
-            onFailure = { libraryState = UiState.Error(it.message ?: "Could not load your library") },
+            onFailure = { libraryState = UiState.Error(it.message ?: DesktopStrings["d_could_not_load_your_library", "Could not load your library"]) },
         )
         // A session refused mid-flight is dropped by the request itself, so the answer to "are we
         // signed in" is only settled once the call is over.
@@ -2954,12 +3009,12 @@ fun BitChordDesktopApp() {
         DesktopSearchClient.moodGenreShelves(item.browseId, item.params).fold(
             onSuccess = { shelves ->
                 moodGenreShelves = if (shelves.isEmpty()) {
-                    UiState.Error("Nothing to explore here yet")
+                    UiState.Error(DesktopStrings["d_nothing_to_explore_here_yet", "Nothing to explore here yet"])
                 } else {
                     UiState.Success(shelves)
                 }
             },
-            onFailure = { moodGenreShelves = UiState.Error(it.message ?: "Could not load this category") },
+            onFailure = { moodGenreShelves = UiState.Error(it.message ?: DesktopStrings["d_could_not_load_this_category", "Could not load this category"]) },
         )
     }
 
@@ -3394,7 +3449,7 @@ fun BitChordDesktopApp() {
                             onNext = ::playNext,
                             onPrevious = ::playPrevious,
                             onBlockedControl = {
-                                DesktopPlayerHost.showMessage("Only the party host can change playback")
+                                DesktopPlayerHost.showMessage(DesktopStrings["d_only_the_party_host_can_change_playback", "Only the party host can change playback"])
                             },
                             onSeek = ::seekPlayer,
                             onSeekFraction = { fraction ->
@@ -3612,7 +3667,7 @@ fun BitChordDesktopApp() {
                                         throw cancelled
                                     } catch (failure: Exception) {
                                         DesktopTrackLog.log("sign-in: YouTube Music failed: ${failure.message}")
-                                        signInError = failure.message ?: "Could not complete the sign-in."
+                                        signInError = failure.message ?: DesktopStrings["d_could_not_complete_the_sign_in", "Could not complete the sign-in."]
                                     } finally {
                                         signInBusy = null
                                         webSignInJob = null
@@ -3625,7 +3680,7 @@ fun BitChordDesktopApp() {
                                         is DesktopBrowserCookies.Result.Session ->
                             signIn(found.cookie, profile.label, profile.database.toString())
                                         DesktopBrowserCookies.Result.SignedOut ->
-                                            signInError = "${profile.label} is not signed in."
+                                            signInError = DesktopStrings.format("d_label_is_not_signed_in", profile.label, fallback = "%1\$s is not signed in.")
                                         is DesktopBrowserCookies.Result.Unavailable ->
                                             signInError = "${profile.label}: ${found.reason}."
                                     }
@@ -3634,9 +3689,9 @@ fun BitChordDesktopApp() {
                             onPaste = { pasted ->
                                 scope.launch {
                                     if (!DesktopBrowserCookies.hasSigningSecret(pasted)) {
-                                        signInError = "That cookie has no signing secret in it — copy the whole header."
+                                        signInError = DesktopStrings["d_that_cookie_has_no_signing_secret", "That cookie has no signing secret in it — copy the whole header."]
                                     } else {
-                                        signIn(pasted, "the cookie you pasted")
+                                        signIn(pasted, DesktopStrings["d_the_cookie_you_pasted", "the cookie you pasted"])
                                     }
                                 }
                             },
@@ -3967,7 +4022,7 @@ fun BitChordDesktopApp() {
                                         sourceConfigs = persistence.sourceConfigs()
                                     },
                                     onTestSource = { candidate ->
-                                        sourceStatus = sourceStatus + (candidate.id to "Checking source…")
+                                        sourceStatus = sourceStatus + (candidate.id to DesktopStrings["d_checking_source", "Checking source…"])
                                         scope.launch {
                                             val health = if (candidate.kind == DesktopSourceKind.ADDON) {
                                                 DesktopAddonSource.health(candidate)
@@ -3978,7 +4033,7 @@ fun BitChordDesktopApp() {
                                                 onSuccess = { sourceStatus = sourceStatus + (candidate.id to it) },
                                                 onFailure = {
                                                     sourceStatus = sourceStatus +
-                                                        (candidate.id to (it.message ?: "Source unavailable"))
+                                                        (candidate.id to (it.message ?: DesktopStrings["d_source_unavailable", "Source unavailable"]))
                                                 },
                                             )
                                         }
@@ -4082,7 +4137,7 @@ fun BitChordDesktopApp() {
                                     DesktopErrorPage(error) { collectionReloads++ }
                                 } else {
                                     val title = openedCollection?.title.orEmpty()
-                                    DesktopLoadingPage(if (title.isBlank()) "Loading…" else "Loading $title…")
+                                    DesktopLoadingPage(if (title.isBlank()) DesktopStrings["d_loading", "Loading…"] else DesktopStrings.format("d_loading_title", title, fallback = "Loading %1\$s…"))
                                 }
                             }
                         }
@@ -4342,7 +4397,7 @@ fun BitChordDesktopApp() {
                             // Only while there is a queue to look at.
                             if (downloadInProgress.isNotEmpty()) {
                                 DesktopActionButton(
-                                    "Queue · ${downloadInProgress.size}",
+                                    "${DesktopStrings["queue", "Queue"]} · ${downloadInProgress.size}",
                                     BitChordIcons.Download,
                                     onClick = { overlays.downloadManager = true },
                                     modifier = Modifier
@@ -4481,7 +4536,7 @@ private fun DesktopTopBar(
                             } else {
                                 Icon(
                                     if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                    if (isPlaying) "Pause" else "Play",
+                                    if (isPlaying) DesktopStrings["pause", "Pause"] else DesktopStrings["play", "Play"],
                                     tint = Color.White,
                                     modifier = Modifier.size(23.dp),
                                 )
@@ -4506,12 +4561,12 @@ private fun DesktopTopBar(
                                     color = tint,
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.semantics { contentDescription = "Repeat one" },
+                                    modifier = Modifier.semantics { contentDescription = DesktopStrings["repeat_one", "Repeat one"] },
                                 )
                             } else {
                                 Icon(
                                     BitChordIcons.Repeat,
-                                    "Repeat ${repeatMode.label()}",
+                                    repeatMode.accessibilityLabel(),
                                     tint = tint,
                                     modifier = Modifier.size(18.dp),
                                 )
@@ -4756,13 +4811,13 @@ private fun DesktopSidebar(
             DesktopSidebarItem(BitChordIcons.Home, DesktopStrings["home", "Home"], destination == DesktopDestination.LISTEN_NOW) {
                 onDestinationSelected(DesktopDestination.LISTEN_NOW)
             }
-            DesktopSidebarItem(BitChordIcons.Explore, "Explore", destination == DesktopDestination.EXPLORE) {
+            DesktopSidebarItem(BitChordIcons.Explore, DesktopStrings["explore", "Explore"], destination == DesktopDestination.EXPLORE) {
                 onDestinationSelected(DesktopDestination.EXPLORE)
             }
-            DesktopSidebarItem(BitChordIcons.Library, "Library", destination == DesktopDestination.LIBRARY) {
+            DesktopSidebarItem(BitChordIcons.Library, DesktopStrings["library", "Library"], destination == DesktopDestination.LIBRARY) {
                 onDestinationSelected(DesktopDestination.LIBRARY)
             }
-            DesktopSidebarItem(BitChordIcons.Search, "Search", destination == DesktopDestination.SEARCH) {
+            DesktopSidebarItem(BitChordIcons.Search, DesktopStrings["search", "Search"], destination == DesktopDestination.SEARCH) {
                 onDestinationSelected(DesktopDestination.SEARCH)
             }
             Spacer(Modifier.height(6.dp))
@@ -4771,29 +4826,29 @@ private fun DesktopSidebar(
             if (HISTORY_KEY !in hiddenSidebar) {
                 DesktopSidebarItem(
                     BitChordIcons.Clock,
-                    "History",
+                    DesktopStrings["history", "History"],
                     destination == DesktopDestination.HISTORY,
                     onClick = { onDestinationSelected(DesktopDestination.HISTORY) },
-                    onHide = { DesktopSidebarVisibility.hide(HISTORY_KEY, "History") },
+                    onHide = { DesktopSidebarVisibility.hide(HISTORY_KEY, DesktopStrings["history", "History"]) },
                 )
             }
             val queued by DesktopDownloadQueue.active.collectAsState()
             if (DOWNLOADS_KEY !in hiddenSidebar) {
                 DesktopSidebarItem(
                     BitChordIcons.Download,
-                    if (queued.isEmpty()) "Downloads" else "Downloads · ${queued.size}",
+                    if (queued.isEmpty()) DesktopStrings["downloads", "Downloads"] else "${DesktopStrings["downloads", "Downloads"]} · ${queued.size}",
                     destination == DesktopDestination.DOWNLOADS,
                     onClick = { onDestinationSelected(DesktopDestination.DOWNLOADS) },
-                    onHide = { DesktopSidebarVisibility.hide(DOWNLOADS_KEY, "Downloads") },
+                    onHide = { DesktopSidebarVisibility.hide(DOWNLOADS_KEY, DesktopStrings["downloads", "Downloads"]) },
                 )
             }
             if (LOCAL_MUSIC_KEY !in hiddenSidebar) {
                 DesktopSidebarItem(
                     BitChordIcons.Library,
-                    "Local Music",
+                    DesktopStrings["local_music", "Local Music"],
                     destination == DesktopDestination.LOCAL_MUSIC,
                     onClick = { onDestinationSelected(DesktopDestination.LOCAL_MUSIC) },
-                    onHide = { DesktopSidebarVisibility.hide(LOCAL_MUSIC_KEY, "Local Music") },
+                    onHide = { DesktopSidebarVisibility.hide(LOCAL_MUSIC_KEY, DesktopStrings["local_music", "Local Music"]) },
                 )
             }
             Spacer(Modifier.height(6.dp))
@@ -4828,7 +4883,7 @@ private fun DesktopSidebar(
                 if (visibleAccount.isEmpty() && visibleLocal.isEmpty()) {
                     item {
                         Text(
-                            "Your playlists will appear here",
+                            DesktopStrings["d_your_playlists_will_appear_here", "Your playlists will appear here"],
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 8.dp),
                             color = DesktopSecondary.copy(alpha = 0.68f),
                             style = MaterialTheme.typography.bodySmall,
@@ -4841,7 +4896,7 @@ private fun DesktopSidebar(
             if (hiddenSidebar.isNotEmpty()) {
                 DesktopSidebarRestoreRow(hiddenSidebar)
             }
-            DesktopSidebarItem(Icons.Rounded.Settings, "Settings", settingsOpen) {
+            DesktopSidebarItem(Icons.Rounded.Settings, DesktopStrings["settings", "Settings"], settingsOpen) {
                 onOpenSettings()
             }
         }
@@ -5013,10 +5068,10 @@ private fun DesktopFloatingNavigation(
     onDestinationSelected: (DesktopDestination) -> Unit,
 ) {
     val tabs = listOf(
-        DesktopDestination.LISTEN_NOW to (BitChordIcons.Play to "Play"),
-        DesktopDestination.EXPLORE to (BitChordIcons.Explore to "Explore"),
-        DesktopDestination.LIBRARY to (BitChordIcons.Library to "Library"),
-        DesktopDestination.SEARCH to (BitChordIcons.Search to "Search"),
+        DesktopDestination.LISTEN_NOW to (BitChordIcons.Play to DesktopStrings["play", "Play"]),
+        DesktopDestination.EXPLORE to (BitChordIcons.Explore to DesktopStrings["explore", "Explore"]),
+        DesktopDestination.LIBRARY to (BitChordIcons.Library to DesktopStrings["library", "Library"]),
+        DesktopDestination.SEARCH to (BitChordIcons.Search to DesktopStrings["search", "Search"]),
     )
     val selected = tabs.firstOrNull { it.first == destination }?.first ?: DesktopDestination.LIBRARY
     val shape = RoundedCornerShape(percent = 50)
@@ -5081,7 +5136,7 @@ private fun DesktopMiniPlayer(
             Text(song.artist, color = DesktopSecondary, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         IconButton(onClick = onPlayPause) {
-            Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) "Pause" else "Play", tint = Color.White)
+            Icon(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) DesktopStrings["pause", "Pause"] else DesktopStrings["play", "Play"], tint = Color.White)
         }
         IconButton(onClick = onNext) {
             Icon(Icons.Rounded.FastForward, DesktopStrings["widget_next", "Next"], tint = Color.White)
@@ -5097,7 +5152,7 @@ internal fun DesktopSearchField(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester = remember { FocusRequester() },
     onFocusChanged: (Boolean) -> Unit = {},
-    placeholder: String = "Search",
+    placeholder: String = DesktopStrings["search", "Search"],
 ) {
     val searchShape = RoundedCornerShape(7.dp)
     Box(
@@ -5325,7 +5380,7 @@ private fun DesktopArtistPage(
     DesktopPageScaffold(contentPadding) {
         when (state) {
             UiState.Loading -> Box(Modifier.fillMaxSize()) {
-                DesktopLoadingPage("Loading $fallbackName…")
+                DesktopLoadingPage(DesktopStrings.format("d_loading_title", fallbackName, fallback = "Loading %1\$s…"))
             }
             is UiState.Error -> Box(Modifier.fillMaxSize()) {
                 DesktopErrorPage(state.message, onRetry)
@@ -5445,8 +5500,8 @@ private fun DesktopArtistPage(
                             item {
                                 DesktopEmptyPage(
                                     Icons.Rounded.Person,
-                                    "Nothing to show for $name",
-                                    "YouTube Music has no songs or releases on this page.",
+                                    DesktopStrings.format("d_nothing_to_show_for", name, fallback = "Nothing to show for %1\$s"),
+                                    DesktopStrings["d_youtube_music_has_no_songs_or_releases_on_this_page", "YouTube Music has no songs or releases on this page."],
                                 )
                             }
                         }
@@ -5532,7 +5587,7 @@ internal data class DesktopQueueSource(
  * `play()` makes the same one from the first row of what it was handed.
  */
 private fun Song.queueSource(): QueueSource = QueueSource(
-    title = playbackSource ?: albumName ?: "Queue",
+    title = playbackSource ?: albumName ?: DesktopStrings["queue", "Queue"],
     type = playbackSourceType ?: PlaybackSourceType.QUEUE,
     id = playbackSourceId,
 )
@@ -5588,7 +5643,7 @@ private fun DesktopHistoryPage(
             contentPadding = pagePadding(start = DesktopPageGutter, end = DesktopPageGutter, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (history.isEmpty()) item { DesktopEmptyPage(BitChordIcons.Clock, "Nothing played yet", "Songs you play will show up here.") }
+            if (history.isEmpty()) item { DesktopEmptyPage(BitChordIcons.Clock, DesktopStrings["history_empty", "Nothing played yet"], DesktopStrings["d_songs_you_play_will_show_up_here", "Songs you play will show up here."]) }
             else items(history, key = Song::videoId) {
                 DesktopSongRow(
                     song = it,
@@ -5633,11 +5688,11 @@ private fun DesktopLocalMusicPage(
     songs: List<Song>,
     onSongClick: (Song) -> Unit,
     contentPadding: PaddingValues,
-    title: String = "Local Music",
-    subtitle: String = "Audio files found in Music and Downloads",
+    title: String = DesktopStrings["local_music", "Local Music"],
+    subtitle: String = DesktopStrings["d_audio_files_found_in_music_and_downloads", "Audio files found in Music and Downloads"],
     emptyIcon: androidx.compose.ui.graphics.vector.ImageVector = BitChordIcons.MusicNote,
-    emptyTitle: String = "No local music",
-    emptyDescription: String = "Put audio files in your Music folder and reopen this page.",
+    emptyTitle: String = DesktopStrings["d_no_local_music", "No local music"],
+    emptyDescription: String = DesktopStrings["d_put_audio_files_in_your_music_folder", "Put audio files in your Music folder and reopen this page."],
     persistenceKey: String = "local",
     menu: (@Composable (Song) -> Unit)? = null,
 ) {
@@ -5668,11 +5723,11 @@ private fun DesktopLocalMusicPage(
         }
     }
     val artists = remember(filteredSongs) {
-        filteredSongs.groupBy { it.artist.ifBlank { "On This Computer" } }
+        filteredSongs.groupBy { it.artist.ifBlank { DesktopStrings["d_on_this_computer", "On This Computer"] } }
             .entries.sortedBy { it.key.lowercase() }
     }
     val albums = remember(filteredSongs) {
-        filteredSongs.groupBy { it.albumName?.takeIf(String::isNotBlank) ?: "Unknown Album" }
+        filteredSongs.groupBy { it.albumName?.takeIf(String::isNotBlank) ?: DesktopStrings["d_unknown_album", "Unknown Album"] }
             .entries.sortedBy { it.key.lowercase() }
     }
     DesktopPageScaffold(contentPadding) {
@@ -5703,12 +5758,12 @@ private fun DesktopLocalMusicPage(
                     view = if (view == DesktopLibraryView.LIST) DesktopLibraryView.GRID else DesktopLibraryView.LIST
                     persistence.saveString("${persistenceKey}_view", view.name)
                 }) {
-                    Icon(if (view == DesktopLibraryView.LIST) BitChordIcons.GridView else BitChordIcons.ListView, "Change view")
+                    Icon(if (view == DesktopLibraryView.LIST) BitChordIcons.GridView else BitChordIcons.ListView, DesktopStrings["d_change_view", "Change view"])
                 }
             }
             Spacer(Modifier.height(10.dp))
             TabRow(selectedTabIndex = selectedTab, containerColor = Color.Transparent) {
-                listOf("Songs", "Artists", "Albums").forEachIndexed { index, label ->
+                listOf(DesktopStrings["songs", "Songs"], DesktopStrings["artists", "Artists"], DesktopStrings["albums", "Albums"]).forEachIndexed { index, label ->
                     Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(label) })
                 }
             }
@@ -5734,8 +5789,8 @@ private fun DesktopLocalMusicPage(
 private fun DesktopLibrarySort.label(): String = when (this) {
     DesktopLibrarySort.TITLE_ASC -> "A–Z"
     DesktopLibrarySort.TITLE_DESC -> "Z–A"
-    DesktopLibrarySort.DATE_ADDED -> "Added"
-    DesktopLibrarySort.DATE_MODIFIED -> "Modified"
+    DesktopLibrarySort.DATE_ADDED -> DesktopStrings["d_sort_added", "Added"]
+    DesktopLibrarySort.DATE_MODIFIED -> DesktopStrings["d_sort_modified", "Modified"]
 }
 
 @Composable
@@ -5746,7 +5801,7 @@ private fun DesktopLibrarySongContent(
     menu: (@Composable (Song) -> Unit)? = null,
 ) {
     if (songs.isEmpty()) {
-        DesktopEmptyPage(BitChordIcons.Search, "No matching music", "Try a different search.")
+        DesktopEmptyPage(BitChordIcons.Search, DesktopStrings["d_no_matching_music", "No matching music"], DesktopStrings["d_try_a_different_search", "Try a different search."])
     } else if (view == DesktopLibraryView.GRID) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 150.dp),
@@ -5793,7 +5848,7 @@ private fun DesktopLibraryGroupingContent(
     onGroupClick: (Pair<String, List<Song>>) -> Unit,
 ) {
     if (groups.isEmpty()) {
-        DesktopEmptyPage(BitChordIcons.Search, "Nothing here yet", "Music will be grouped as it is added.")
+        DesktopEmptyPage(BitChordIcons.Search, DesktopStrings["d_nothing_here_yet", "Nothing here yet"], DesktopStrings["d_music_will_be_grouped_as_it_is_added", "Music will be grouped as it is added."])
     } else if (view == DesktopLibraryView.GRID) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 150.dp),
@@ -5988,7 +6043,7 @@ private fun DesktopSettingsScreen(
                         Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
                             Text(DesktopStrings["crossfade", "Crossfade"], style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                if (crossfadeSeconds == 0) "Off" else "${crossfadeSeconds}s",
+                                if (crossfadeSeconds == 0) DesktopStrings["d_off", "Off"] else DesktopStrings.format("d_seconds_short", crossfadeSeconds, fallback = "%1\$ss"),
                                 color = DesktopSecondary,
                                 style = MaterialTheme.typography.bodySmall,
                             )
@@ -6004,9 +6059,9 @@ private fun DesktopSettingsScreen(
                     SettingsToggle(
                         DesktopStrings["automix", "Automix [BETA]"],
                         if (automix) {
-                            "Calculates timing and blends transitions from the tracks"
+                            DesktopStrings["d_automix_on_subtitle", "Calculates timing and blends transitions from the tracks"]
                         } else {
-                            "Automatically calculates transition timing without a slider"
+                            DesktopStrings["d_automix_off_subtitle", "Automatically calculates transition timing without a slider"]
                         },
                         automix,
                         onAutomixChange,
@@ -6095,7 +6150,7 @@ private fun DesktopSettingsScreen(
                     SettingsToggle(
                         DesktopStrings["dolby_atmos", "Dolby Atmos"],
                         if (DesktopCodecs.supportsDolbyAtmos) {
-                            "Prefer an add-on's immersive mix and decode E-AC-3 with FFmpeg"
+                            DesktopStrings["d_dolby_atmos_subtitle", "Prefer an add-on's immersive mix and decode E-AC-3 with FFmpeg"]
                         } else {
                             DesktopStrings["dolby_atmos_unavailable", "This device can't play Atmos, so these songs play in their usual version"]
                         },
@@ -6130,7 +6185,7 @@ private fun DesktopSettingsScreen(
                     SettingsRow(
                         BitChordIcons.Repeat,
                         DesktopStrings["d_repeat", "Repeat"],
-                        "${repeatMode.label()} · Tap to change",
+                        "${repeatMode.label()} · ${DesktopStrings["d_click_to_change", "Tap to change"]}",
                     ) { onRepeatModeChange(repeatMode.next()) }
                     SettingsRow(
                         Icons.Rounded.Tune,
@@ -6148,11 +6203,11 @@ private fun DesktopSettingsScreen(
                     }
                     SettingsRow(
                         Icons.Rounded.Bedtime,
-                        "Sleep timer",
+                        DesktopStrings["sleep_timer", "Sleep timer"],
                         when {
-                            sleepRemainingMs != null -> "${formatSleepTimer(sleepRemainingMs)} until playback pauses"
-                            sleepAfterTrack -> "Pausing when this song ends"
-                            else -> "Pause playback after a while"
+                            sleepRemainingMs != null -> DesktopStrings.format("pause_countdown", formatSleepTimer(sleepRemainingMs), fallback = "%1\$s until playback pauses")
+                            sleepAfterTrack -> DesktopStrings["pause_after_song", "Pausing when this song ends"]
+                            else -> DesktopStrings["pause_after_a_while", "Pause playback after a while"]
                         },
                     ) { onSleepTimerCycle() }
                 }
@@ -6178,7 +6233,7 @@ private fun DesktopSettingsScreen(
                             title = DesktopStrings["lyrics_sources", "Lyrics sources"],
                             subtitle = enabledLyricsSources
                                 .joinToString(", ")
-                                .ifEmpty { "None. Lyrics will not be fetched." },
+                                .ifEmpty { DesktopStrings["no_lyrics_sources_enabled", "None. Lyrics will not be fetched."] },
                             onClick = onOpenLyricsSources,
                         )
                         val translationLanguage by DesktopTranslationSetting.language.collectAsState()
@@ -6228,10 +6283,10 @@ private fun DesktopSettingsScreen(
                         Text(DesktopStrings["song_cache_limit", "Song cache limit"], style = MaterialTheme.typography.bodyLarge)
                         Text(
                             if (limitMb > DesktopMediaCache.WARNING_MB) {
-                                "Keeps up to ${formatCacheSize(limitMb)} of downloaded audio on disk. " +
-                                    "This can take a noticeable share of your free space."
+                                DesktopStrings.format("d_song_cache_warning", formatCacheSize(limitMb), fallback = "Keeps up to %1\$s of downloaded audio on disk. " +
+                                    "This can take a noticeable share of your free space.")
                             } else {
-                                "Keeps downloaded audio on disk for instant seeking and replays"
+                                DesktopStrings["song_cache_limit_subtitle", "Keeps downloaded audio on disk for instant seeking and replays"]
                             },
                             color = DesktopSecondary,
                             style = MaterialTheme.typography.bodySmall,
@@ -6250,17 +6305,17 @@ private fun DesktopSettingsScreen(
                     }
                     SettingsRow(
                         Icons.Rounded.DeleteSweep,
-                        "Clear song cache",
-                        cleared ?: "Frees space used by downloaded audio",
+                        DesktopStrings["clear_song_cache", "Clear song cache"],
+                        cleared ?: DesktopStrings["clear_song_cache_subtitle", "Frees space used by downloaded audio"],
                     ) {
                         DesktopMediaCache.clear()
-                        cleared = "Song cache cleared"
+                        cleared = DesktopStrings["song_cache_cleared", "Song cache cleared"]
                     }
                     var imagesCleared by remember { mutableStateOf(false) }
                     SettingsRow(
                         Icons.Rounded.DeleteSweep,
-                        "Clear image cache",
-                        if (imagesCleared) "Image cache cleared" else "Frees space used by album artwork",
+                        DesktopStrings["clear_image_cache", "Clear image cache"],
+                        if (imagesCleared) DesktopStrings["image_cache_cleared", "Image cache cleared"] else DesktopStrings["clear_image_cache_subtitle", "Frees space used by album artwork"],
                     ) {
                         DesktopArtworkCache.clear()
                         imagesCleared = true
@@ -6272,7 +6327,7 @@ private fun DesktopSettingsScreen(
                     var folderLabel by remember { mutableStateOf(DesktopLocalMusic.folderLabel()) }
                     SettingsRow(
                         Icons.Rounded.Folder,
-                        "Local music folder",
+                        DesktopStrings["local_music_folder", "Local music folder"],
                         folderLabel,
                     ) {
                         onChooseLocalMusicFolder { folderLabel = DesktopLocalMusic.folderLabel() }
@@ -6301,6 +6356,16 @@ private fun DesktopSettingsScreen(
             }
             if (section == DesktopSettingsSection.APPEARANCE) item {
                 SettingsGroup(DesktopStrings["appearance", "Appearance"]) {
+                    val showKoreanCharts by DesktopAppearanceSettings.showKoreanCharts.collectAsState()
+                    SettingsToggle(
+                        DesktopStrings["show_korean_charts", "Show Korean charts"],
+                        DesktopStrings[
+                            "show_korean_charts_subtitle",
+                            "Adds Melon and Circle Chart shelves to Home. Songs are matched on YouTube Music.",
+                        ],
+                        showKoreanCharts,
+                        DesktopAppearanceSettings::setShowKoreanCharts,
+                    )
                     val reduceDynamicBlur by DesktopAppearanceSettings.reduceDynamicBlur.collectAsState()
                     SettingsToggle(
                         DesktopStrings["reduce_dynamic_blur", "Reduce dynamic blur"],
@@ -6308,6 +6373,28 @@ private fun DesktopSettingsScreen(
                         reduceDynamicBlur,
                         DesktopAppearanceSettings::setReduceDynamicBlur,
                     )
+                    val useSystemFont by DesktopAppearanceSettings.useSystemFont.collectAsState()
+                    val fontTitle = DesktopStrings["app_font", "Font"]
+                    if (settingsRowVisible(fontTitle, "Pretendard JP")) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+                            Text(fontTitle, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(10.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    colors = desktopChipColors(),
+                                    selected = !useSystemFont,
+                                    onClick = { DesktopAppearanceSettings.setUseSystemFont(false) },
+                                    label = { Text("Pretendard JP") },
+                                )
+                                FilterChip(
+                                    colors = desktopChipColors(),
+                                    selected = useSystemFont,
+                                    onClick = { DesktopAppearanceSettings.setUseSystemFont(true) },
+                                    label = { Text(DesktopStrings["app_font_system", "System"]) },
+                                )
+                            }
+                        }
+                    }
                     // Window furniture belongs beside the visual settings it changes, rather than
                     // interrupting playback controls. These rows remain Windows-only.
                     if (DesktopPlatform.drawsOwnWindowFrame) {
@@ -6350,14 +6437,14 @@ private fun DesktopSettingsScreen(
                                 Text(
                                     when {
                                         backdropChoice != DesktopBackdrop.OFF && backdropActive == DesktopBackdrop.OFF ->
-                                            if (DesktopPlatform.isMac) "Native vibrancy could not be attached"
-                                            else "Needs Windows 11 version 22H2 or later"
+                                            if (DesktopPlatform.isMac) DesktopStrings["d_native_vibrancy_could_not_be_attached", "Native vibrancy could not be attached"]
+                                            else DesktopStrings["d_needs_windows_11_version_22h2_or_later", "Needs Windows 11 version 22H2 or later"]
                                         backdropChoice == DesktopBackdrop.MICA ->
-                                            if (DesktopPlatform.isMac) "A subtle blur of your desktop wallpaper"
-                                            else "A soft tint taken from your wallpaper"
+                                            if (DesktopPlatform.isMac) DesktopStrings["d_a_subtle_blur_of_your_desktop_wallpaper", "A subtle blur of your desktop wallpaper"]
+                                            else DesktopStrings["d_a_soft_tint_taken_from_your_wallpaper", "A soft tint taken from your wallpaper"]
                                         backdropChoice == DesktopBackdrop.ACRYLIC ->
-                                            "A frosted blur of whatever is behind the window"
-                                        else -> "Solid, as the rest of the app"
+                                            DesktopStrings["d_a_frosted_blur_of_whatever_is_behind_the_window", "A frosted blur of whatever is behind the window"]
+                                        else -> DesktopStrings["d_solid_as_the_rest_of_the_app", "Solid, as the rest of the app"]
                                     },
                                     color = DesktopSecondary,
                                     style = MaterialTheme.typography.bodySmall,
@@ -6407,11 +6494,41 @@ private fun DesktopSettingsScreen(
                         SettingsNavigationRow(
                             title = DesktopStrings["spotify_canvas_setup", "Spotify Canvas setup"],
                             subtitle = if (spotifyCanvasReady) {
-                                "Connected"
+                                DesktopStrings["connected", "Connected"]
                             } else {
-                                "To use Spotify Canvas, provide your Spotify sp_dc cookie."
+                                DesktopStrings["spotify_canvas_setup_description", "To use Spotify Canvas, provide your Spotify sp_dc cookie."]
                             },
                             onClick = onOpenSpotifyCanvasSetup,
+                        )
+                    }
+                }
+            }
+            if (section == DesktopSettingsSection.APPEARANCE) item {
+                // One switch per piece of the main player, on while it is shown. The stored
+                // settings are hides, so a fresh install shows everything. "Playing from" has no
+                // switch here: the desktop player never shows that caption.
+                SettingsGroup(DesktopStrings["player_screen", "Player screen"]) {
+                    @Composable
+                    fun playerToggle(key: String, fallback: String, hidden: StateFlow<Boolean>, setHidden: (Boolean) -> Unit) {
+                        val isHidden by hidden.collectAsState()
+                        SettingsToggle(DesktopStrings[key, fallback], "", !isHidden) { setHidden(!it) }
+                    }
+                    playerToggle("show_player_handle", "Drag handle", DesktopAppearanceSettings.hidePlayerHandle, DesktopAppearanceSettings::setHidePlayerHandle)
+                    playerToggle("show_explicit_badge", "Explicit badge", DesktopAppearanceSettings.hideExplicitBadge, DesktopAppearanceSettings::setHideExplicitBadge)
+                    playerToggle("show_like_button", "Like button", DesktopAppearanceSettings.hideLikeButton, DesktopAppearanceSettings::setHideLikeButton)
+                    playerToggle("show_lyric_strip", "Current lyric line", DesktopAppearanceSettings.hideLyricStrip, DesktopAppearanceSettings::setHideLyricStrip)
+                    playerToggle("show_time_labels", "Elapsed and remaining time", DesktopAppearanceSettings.hideTimeLabels, DesktopAppearanceSettings::setHideTimeLabels)
+                    playerToggle("show_quality_badge", "Audio quality badge", DesktopAppearanceSettings.hideQualityBadge, DesktopAppearanceSettings::setHideQualityBadge)
+                    playerToggle("show_mixing_indicator", "Automix indicator", DesktopAppearanceSettings.hideMixingIndicator, DesktopAppearanceSettings::setHideMixingIndicator)
+                    playerToggle("show_volume_bar", "Volume bar", DesktopAppearanceSettings.hideVolumeBar, DesktopAppearanceSettings::setHideVolumeBar)
+                    playerToggle("show_listen_together_button", "Listen Together button", DesktopAppearanceSettings.hideListenTogetherButton, DesktopAppearanceSettings::setHideListenTogetherButton)
+                    playerToggle("show_output_caption", "Output device name", DesktopAppearanceSettings.hideOutputCaption, DesktopAppearanceSettings::setHideOutputCaption)
+                    if (LocalSettingsQuery.current.isBlank()) {
+                        Text(
+                            DesktopStrings["player_screen_footer", "Turn off anything you\u2019d rather not see on the main player."],
+                            color = DesktopSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp),
                         )
                     }
                 }
@@ -6444,12 +6561,16 @@ private fun DesktopSettingsScreen(
                             onCloseToTrayChange,
                         )
                     }
-                    val hideVolumeBar by DesktopAppearanceSettings.hideVolumeBar.collectAsState()
+                    val shortShareLinks by DesktopAppearanceSettings.shortShareLinks.collectAsState()
                     SettingsToggle(
-                        DesktopStrings["hide_volume_bar", "Hide volume bar"],
-                        DesktopStrings["hide_volume_bar_subtitle", "Removes the volume slider from the main player"],
-                        hideVolumeBar,
-                        DesktopAppearanceSettings::setHideVolumeBar,
+                        DesktopStrings["short_share_links", "Share youtu.be links"],
+                        DesktopStrings[
+                            "short_share_links_subtitle",
+                            "Songs are shared and copied as youtu.be links, playlists as youtube.com links, " +
+                                "instead of music.youtube.com",
+                        ],
+                        shortShareLinks,
+                        DesktopAppearanceSettings::setShortShareLinks,
                     )
                 }
             }
@@ -6514,7 +6635,7 @@ private fun DesktopSettingsScreen(
                         // question, and a setting that silently did not take is worse than one that
                         // says so.
                         Text(
-                            "Playing at $outputSummary",
+                            DesktopStrings.format("d_playing_at", outputSummary, fallback = "Playing at %1\$s"),
                             color = DesktopSecondary,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -6529,7 +6650,7 @@ private fun DesktopSettingsScreen(
                         Modifier.fillMaxWidth().padding(vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        listOf("STANDARD" to "Standard", "HIGH" to "High", "LOSSLESS" to "Lossless").forEach { (value, label) ->
+                        listOf("STANDARD" to DesktopStrings["standard", "Standard"], "HIGH" to DesktopStrings["high", "High"], "LOSSLESS" to DesktopStrings["lossless", "Lossless"]).forEach { (value, label) ->
                             FilterChip(
                                 colors = desktopChipColors(),
                                 selected = downloadQuality == value,
@@ -6575,7 +6696,7 @@ private fun DesktopSettingsScreen(
                     // One entry point, and it creates an addon.
                     SettingsRow(
                         BitChordIcons.Plus,
-                        "Add a source",
+                        DesktopStrings["d_add_a_source", "Add a source"],
                         DesktopSourceKind.ADDON.detail,
                     ) {
                         editingSource = DesktopSourceConfig(
@@ -6652,7 +6773,7 @@ private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
             }
             append("  ")
             withLink(LinkAnnotation.Url("https://github.com/kushagrasinghx", linkStyles)) {
-                append("Developer")
+                append(DesktopStrings["settings_link_developer", "Developer"])
             }
             append("  ")
             withLink(LinkAnnotation.Url("https://discord.gg/pDdKfrdHY6", linkStyles)) {
@@ -6660,7 +6781,7 @@ private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
             }
             append("  ")
             withLink(LinkAnnotation.Clickable("licenses", linkStyles) { onLicenses() }) {
-                append("Licenses")
+                append(DesktopStrings["d_licenses", "Licenses"])
             }
             append("\n~YouTube Music Backend")
         },
@@ -6778,10 +6899,10 @@ private fun DesktopSourceSettingsRow(
                 when {
                     // The ceiling in force, not the switch, is why this one is being passed over —
                     // worth saying, or the row reads as enabled and silently unused.
-                    skippedByQuality -> "Skipped at this audio quality"
+                    skippedByQuality -> DesktopStrings["d_skipped_at_this_audio_quality", "Skipped at this audio quality"]
                     status != null -> status
-                    !config.isComplete -> "Setup required"
-                    config.kind.needsServer -> "Checking…"
+                    !config.isComplete -> DesktopStrings["d_setup_required", "Setup required"]
+                    config.kind.needsServer -> DesktopStrings["checking", "Checking…"]
                     else -> config.kind.detail
                 } + if (!config.allowDownloads) {
                     " · " + DesktopStrings["source_downloads_off", "Streaming only"]
@@ -6797,12 +6918,12 @@ private fun DesktopSourceSettingsRow(
         Spacer(Modifier.width(8.dp))
         if (onMoveUp != null) {
             IconButton(onClick = onMoveUp, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Rounded.KeyboardArrowUp, "Move source earlier")
+                Icon(Icons.Rounded.KeyboardArrowUp, DesktopStrings["d_move_source_earlier", "Move source earlier"])
             }
         }
         if (onMoveDown != null) {
             IconButton(onClick = onMoveDown, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Rounded.KeyboardArrowDown, "Move source later")
+                Icon(Icons.Rounded.KeyboardArrowDown, DesktopStrings["d_move_source_later", "Move source later"])
             }
         }
         if (onToggle == null) {
@@ -6851,9 +6972,9 @@ private fun DesktopSourceEditorDialog(
                             )
                             val duplicate = configuredSources.duplicateOf(named.baseUrl, exceptId = named.id)
                             if (duplicate != null) {
-                                message = "Already added as ${duplicate.displayName}"
+                                message = DesktopStrings.format("source_already_added", duplicate.displayName, fallback = "Already added as %1\$s")
                             } else {
-                                message = "Addon · ${detected.manifest.displayName}"
+                                message = "${DesktopStrings["source_kind_addon", "Addon"]} · ${detected.manifest.displayName}"
                                 if (thenSave) onSave(named)
                             }
                         }
@@ -6862,20 +6983,20 @@ private fun DesktopSourceEditorDialog(
                                 kind = DesktopSourceKind.CUSTOM_MODULE,
                                 baseUrl = detected.url.ifBlank { candidate.baseUrl },
                             )
-                            message = "Module index · ${detected.moduleCount} modules"
+                            message = DesktopStrings.format("d_module_index_count", detected.moduleCount, fallback = "Module index · %1\$d modules")
                             if (thenSave) onSave(asIndex)
                         }
                         is DesktopDetectedFormat.Unsupported -> message = detected.reason
                     }
                 },
-                onFailure = { message = it.message ?: "Nothing answered at that address" },
+                onFailure = { message = it.message ?: DesktopStrings["source_err_no_answer", "Nothing answered at that address"] },
             )
         }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (isNew) "Add a source" else config.displayName) },
+        title = { Text(if (isNew) DesktopStrings["d_add_a_source", "Add a source"] else config.displayName) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -6926,7 +7047,7 @@ private fun DesktopSourceEditorDialog(
                     },
                     enabled = candidate.baseUrl.isNotBlank() && !checking,
                 ) {
-                    Text(if (checking) "Checking…" else "Test")
+                    Text(if (checking) DesktopStrings["checking", "Checking…"] else DesktopStrings["test", "Test"])
                 }
                 TextButton(
                     onClick = { identify(thenSave = true) },
@@ -6989,10 +7110,10 @@ private fun DesktopCollectionPage(
             !it.matches(Regex("[0-9,.]+\\s*(?:songs?|tracks?)", RegexOption.IGNORE_CASE))
     }.orEmpty()
     val typeLabel = when (collection.type) {
-        BrowseType.ALBUM -> "Album"
-        BrowseType.PLAYLIST -> "Playlist"
-        BrowseType.ARTIST -> "Artist"
-        BrowseType.OTHER -> "Collection"
+        BrowseType.ALBUM -> DesktopStrings["album", "Album"]
+        BrowseType.PLAYLIST -> DesktopStrings["playlist", "Playlist"]
+        BrowseType.ARTIST -> DesktopStrings["artist", "Artist"]
+        BrowseType.OTHER -> DesktopStrings["d_collection", "Collection"]
     }
     val metadata = buildList {
         add(typeLabel.uppercase())
@@ -7315,7 +7436,7 @@ private fun DesktopCollectionSongRow(
                 IconButton(onClick = { onLike(song) }, modifier = Modifier.size(34.dp)) {
                     Icon(
                         if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart,
-                        "Favorite",
+                        DesktopStrings["like", "Favorite"],
                         tint = if (liked) DesktopAccent else DesktopSecondary,
                         modifier = Modifier.size(18.dp),
                     )
@@ -7328,7 +7449,7 @@ private fun DesktopCollectionSongRow(
                     } else {
                         Icon(
                             if (downloaded) BitChordIcons.Download else BitChordIcons.Download,
-                            if (downloaded) "Downloaded" else "Download",
+                            if (downloaded) DesktopStrings["downloaded", "Downloaded"] else DesktopStrings["download", "Download"],
                             tint = if (downloaded) DesktopAccent else DesktopSecondary,
                             modifier = Modifier.size(18.dp),
                         )
@@ -7490,9 +7611,9 @@ private fun DesktopChromeEdge.dissolve(colour: Color, fade: Float): Brush? {
 }
 
 private fun AutomixPerformanceMode.label(): String = when (this) {
-    AutomixPerformanceMode.EFFICIENT -> "Efficient"
-    AutomixPerformanceMode.BALANCED -> "Balanced"
-    AutomixPerformanceMode.PERFORMANCE -> "Performance"
+    AutomixPerformanceMode.EFFICIENT -> DesktopStrings["automix_mode_efficient", "Efficient"]
+    AutomixPerformanceMode.BALANCED -> DesktopStrings["automix_mode_balanced", "Balanced"]
+    AutomixPerformanceMode.PERFORMANCE -> DesktopStrings["automix_mode_performance", "Performance"]
 }
 
 /** Android's description of each rung. */
@@ -7757,7 +7878,7 @@ private fun DesktopSongRow(
             )
         }
         if (onToggleLike != null) {
-            IconButton(onClick = { onToggleLike(song) }) { Icon(if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart, "Favorite", tint = if (liked) DesktopAccent else DesktopSecondary) }
+            IconButton(onClick = { onToggleLike(song) }) { Icon(if (liked) BitChordIcons.HeartFilled else BitChordIcons.Heart, DesktopStrings["like", "Favorite"], tint = if (liked) DesktopAccent else DesktopSecondary) }
         }
         if (onDownload != null) {
             if (downloadInProgress) {
@@ -7772,7 +7893,7 @@ private fun DesktopSongRow(
                 IconButton(onClick = { if (!downloaded) onDownload(song) }) {
                     Icon(
                         imageVector = if (downloaded) BitChordIcons.Download else BitChordIcons.Download,
-                        contentDescription = if (downloaded) "Downloaded" else "Download",
+                        contentDescription = if (downloaded) DesktopStrings["downloaded", "Downloaded"] else DesktopStrings["download", "Download"],
                         tint = if (downloaded) DesktopAccent else DesktopSecondary,
                     )
                 }
@@ -7852,7 +7973,7 @@ private fun DesktopLoadingPage(label: String) {
 
 @Composable
 private fun DesktopErrorPage(message: String, onRetry: () -> Unit) {
-    DesktopEmptyPage(Icons.Rounded.Tune, "Something went wrong", message, onRetry, "Try again")
+    DesktopEmptyPage(Icons.Rounded.Tune, DesktopStrings["something_went_wrong", "Something went wrong"], message, onRetry, DesktopStrings["try_again", "Try again"])
 }
 
 @Composable
@@ -8001,7 +8122,9 @@ private fun SettingsToggle(title: String, subtitle: String, checked: Boolean, on
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(subtitle, color = DesktopSecondary, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+            if (subtitle.isNotEmpty()) {
+                Text(subtitle, color = DesktopSecondary, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
+            }
         }
         Spacer(Modifier.width(18.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange, colors = desktopSwitchColors())

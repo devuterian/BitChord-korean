@@ -37,7 +37,7 @@ internal object DesktopTranslationSetting {
     fun describe(tag: String): String {
         val locale = Locale.forLanguageTag(DesktopStrings.resolvedTag().ifBlank { "en" })
         val name = translationLanguageName(resolvedFor(tag), locale)
-        return if (tag.isBlank()) "$name · follows the app" else name
+        return if (tag.isBlank()) DesktopStrings.format("d_translation_follows_app", name, fallback = "%1\$s · follows the app") else name
     }
 
     private fun resolvedFor(tag: String): String =

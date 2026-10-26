@@ -464,7 +464,7 @@ internal object DesktopModuleSource {
     internal fun parseIndex(body: String): List<DesktopSpineModule> = manager.parseIndex(body)
 
     suspend fun health(config: DesktopSourceConfig): Result<String> = manager.modules(config.baseUrl.trim()).mapCatching { modules ->
-        check(modules.isNotEmpty()) { "The index listed no modules" }
+        check(modules.isNotEmpty()) { DesktopStrings["d_the_index_listed_no_modules", "The index listed no modules"] }
         "${modules.size} module${if (modules.size == 1) "" else "s"} available"
     }
 
@@ -492,7 +492,7 @@ internal object DesktopModuleSource {
             return Result.failure(IllegalArgumentException("Track belongs to another module source"))
         }
         val indexUrl = config.baseUrl.trim().takeIf(String::isNotBlank)
-            ?: return Result.failure(IllegalStateException("No module index is configured"))
+            ?: return Result.failure(IllegalStateException(DesktopStrings["d_no_module_index_is_configured", "No module index is configured"]))
         val quality = (qualityOverride ?: DesktopPersistence().audioQuality().name)
             .uppercase(Locale.ROOT).let {
             when (it) {

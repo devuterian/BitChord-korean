@@ -71,17 +71,17 @@ internal object DesktopDiscordSettings {
         else -> 2
     }
 
-    val statuses = listOf(
-        Choice("online", "Online", "Green dot"),
-        Choice("idle", "Idle", "Amber crescent, shown as away"),
-        Choice("dnd", "Do not disturb", "Red dash. Also suppresses notifications."),
+    val statuses get() = listOf(
+        Choice("online", DesktopStrings["status_online", "Online"], DesktopStrings["status_online_detail", "Green dot"]),
+        Choice("idle", DesktopStrings["status_idle", "Idle"], DesktopStrings["status_idle_detail", "Amber crescent, shown as away"]),
+        Choice("dnd", DesktopStrings["status_dnd", "Do not disturb"], DesktopStrings["status_dnd_detail", "Red dash. Also suppresses notifications."]),
     )
 
-    val activities = listOf(
-        Choice("listening", "Listening", "Listening to"),
-        Choice("playing", "Playing", "Playing"),
-        Choice("watching", "Watching", "Watching"),
-        Choice("competing", "Competing", "Competing in"),
+    val activities get() = listOf(
+        Choice("listening", DesktopStrings["activity_listening", "Listening"], DesktopStrings["verb_listening", "Listening to"]),
+        Choice("playing", DesktopStrings["activity_playing", "Playing"], DesktopStrings["verb_playing", "Playing"]),
+        Choice("watching", DesktopStrings["activity_watching", "Watching"], DesktopStrings["verb_watching", "Watching"]),
+        Choice("competing", DesktopStrings["activity_competing", "Competing"], DesktopStrings["verb_competing", "Competing in"]),
     )
 
     /** One option in a choice list: what it is called and what it does. */
@@ -89,7 +89,7 @@ internal object DesktopDiscordSettings {
 
     fun statusLabel(id: String) = statuses.firstOrNull { it.id == id }?.label ?: id
     fun activityLabel(id: String) = activities.firstOrNull { it.id == id }?.label ?: id
-    fun activityVerb(id: String) = activities.firstOrNull { it.id == id }?.detail ?: "Listening to"
+    fun activityVerb(id: String) = activities.firstOrNull { it.id == id }?.detail ?: DesktopStrings["verb_listening", "Listening to"]
 
     const val DEFAULT_BUTTON_1 = "Listen on YouTube Music"
     const val DEFAULT_BUTTON_2 = "Visit BitChord"
